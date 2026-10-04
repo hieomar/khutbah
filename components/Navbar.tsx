@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Smartphone, Menu, X, Search, Sparkles, Compass } from 'lucide-react';
+import Link from 'next/link';
+import { Smartphone, Menu, X, Search, Sparkles, Compass, Shield } from 'lucide-react';
 import Logo from './Logo';
 
 interface NavbarProps {
@@ -90,7 +91,7 @@ export default function Navbar({ onSearchClick, onAppClick }: NavbarProps) {
             </div>
 
             {/* Right Navigation */}
-            <div className="hidden md:flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2.5">
               {onSearchClick && (
                 <button
                   onClick={onSearchClick}
@@ -101,6 +102,15 @@ export default function Navbar({ onSearchClick, onAppClick }: NavbarProps) {
                   <Search className="w-4 h-4" />
                 </button>
               )}
+
+              {/* Sign in / Admin Portal */}
+              <Link
+                href="/admin"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium text-secondary hover:text-[#171717] hover:bg-black/5 transition-colors"
+              >
+                <Shield className="w-3 h-3 text-accent-gold" />
+                <span>Admin</span>
+              </Link>
 
               <button
                 onClick={() => {
@@ -123,13 +133,13 @@ export default function Navbar({ onSearchClick, onAppClick }: NavbarProps) {
 
             {/* Mobile Menu Button */}
             <div className="flex items-center gap-2 md:hidden">
-              <button
-                onClick={() => scrollTo('mobile-app')}
+              <Link
+                href="/admin"
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium text-[#171717] bg-black/5 border border-black/8"
               >
-                <Smartphone className="w-3 h-3 text-accent-orange" />
-                <span>App</span>
-              </button>
+                <Shield className="w-3 h-3 text-accent-gold" />
+                <span>Admin</span>
+              </Link>
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="p-1.5 rounded-full text-[#171717] hover:bg-black/5 focus:outline-none"
@@ -184,6 +194,13 @@ export default function Navbar({ onSearchClick, onAppClick }: NavbarProps) {
               >
                 About the Platform
               </button>
+              <Link
+                href="/admin"
+                className="text-left py-2 border-b border-black/5 flex items-center justify-between text-accent-orange"
+              >
+                <span>Administrator Dashboard</span>
+                <Shield className="w-4 h-4" />
+              </Link>
             </div>
           </div>
 
