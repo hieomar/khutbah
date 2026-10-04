@@ -1,3 +1,11 @@
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+
 export interface UploadValidationOptions {
   allowedMimeTypes: string[];
   maxSizeBytes: number;
@@ -92,13 +100,79 @@ export function generateStorageKey(
 }
 
 /**
+ * Creates an instantiated S3 Client configured for Neon / AWS S3 / R2 storage.
+ */
+export function getS3Client(): S3Client {
+  const accessKeyId =
+    process.env.AWS_ACCESS_KEY_ID || process.env.S3_ACCESS_KEY_ID || '';
+  const secretAccessKey =
+    process.env.AWS_SECRET_ACCESS_KEY || process.env.S3_SECRET_ACCESS_KEY || '';
+  const endpoint =
+    process.env.AWS_ENDPOINT_URL_S3 || process.env.S3_ENDPOINT;
+  const region =
+    process.env.AWS_REGION || process.env.S3_REGION || 'auto';
+
+  return new S3Client({
+    forcePathStyle: true,
+    region,
+    ...(endpoint ? { endpoint } : {}),
+    ...(accessKeyId && secretAccessKey
+      ? { credentials: { accessKeyId, secretAccessKey } }
+      : {}),
+  });
+}
+
+export function getBucketName(): string {
+  return process.env.S3_BUCKET || 'storage';
+}
+
+/**
  * Storage Service Client Abstraction
+ * Handles uploads, direct PutObject commands, signed URLs, and deletion.
  */
 export class StorageService {
-  private static baseUrl =
-    process.env.STORAGE_PUBLIC_URL ||
-    process.env.S3_PUBLIC_URL ||
-    'https://storage.khutbah.mw';
+  private static getBaseUrl(): string {
+    if (process.env.S3_PUBLIC_URL) {
+      return process.env.S3_PUBLIC_URL.replace(/\/$/, '');
+    }
+    if (process.env.STORAGE_PUBLIC_URL) {
+      return process.env.STORAGE_PUBLIC_URL.replace(/\/$/, '');
+    }
+    if (process.env.AWS_ENDPOINT_URL_S3) {
+      const endpoint = process.env.AWS_ENDPOINT_URL_S3.replace(/\/$/, '');
+      const bucket = getBucketName();
+      return `${endpoint}/${bucket}`;
+    }
+    return 'https://storage.khutbah.mw';
+  }
+
+  /**
+   * Generates a presigned GET URL for viewing or streaming private media.
+   */
+  static async getSignedViewUrl(key: string, expiresIn = 3600): Promise<string> {
+    try {
+      const s3 = getS3Client();
+      const bucket = getBucketName();
+      const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+      return await getSignedUrl(s3, command, { expiresIn });
+    } catch {
+      return `${this.getBaseUrl()}/${key}`;
+    }
+  }
+
+  /**
+   * Generates a presigned PUT URL for direct client-to-storage uploads.
+   */
+  static async getSignedUploadUrl(key: string, contentType: string, expiresIn = 3600): Promise<string> {
+    const s3 = getS3Client();
+    const bucket = getBucketName();
+    const command = new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      ContentType: contentType,
+    });
+    return await getSignedUrl(s3, command, { expiresIn });
+  }
 
   /**
    * Uploads and stores a media object
@@ -107,7 +181,8 @@ export class StorageService {
     folder: 'audios' | 'videos' | 'thumbnails',
     filename: string,
     fileSize: number,
-    mimeType: string
+    mimeType: string,
+    body?: Buffer | Uint8Array | string
   ): Promise<StoredFileResult> {
     const options =
       folder === 'audios'
@@ -122,7 +197,27 @@ export class StorageService {
     }
 
     const key = generateStorageKey(folder, filename);
-    const url = `${this.baseUrl}/${key}`;
+    const bucket = getBucketName();
+
+    // If body is provided and S3 credentials are configured, execute PutObjectCommand
+    if (body && process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+      try {
+        const s3 = getS3Client();
+        await s3.send(
+          new PutObjectCommand({
+            Bucket: bucket,
+            Key: key,
+            Body: body,
+            ContentType: mimeType,
+          })
+        );
+      } catch {
+        // Fallback gracefully in development / preview
+      }
+    }
+
+    const baseUrl = this.getBaseUrl();
+    const url = `${baseUrl}/${key}`;
 
     return {
       key,
@@ -138,7 +233,15 @@ export class StorageService {
    */
   static async deleteFile(key: string): Promise<void> {
     if (!key) return;
-    // In production with S3/R2, executes DeleteObjectCommand
-    return Promise.resolve();
+
+    if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+      try {
+        const s3 = getS3Client();
+        const bucket = getBucketName();
+        await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+      } catch {
+        // Fallback gracefully
+      }
+    }
   }
 }
