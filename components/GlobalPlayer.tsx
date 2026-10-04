@@ -9,11 +9,8 @@ import {
   RotateCcw,
   RotateCw,
   X,
-  ChevronDown,
-  ChevronUp,
   Headphones,
   Video,
-  Radio,
 } from 'lucide-react';
 import { Teaching } from '../types/content';
 
@@ -33,7 +30,6 @@ export default function GlobalPlayer({
   const [progress, setProgress] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const [isMuted, setIsMuted] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
 
   // Auto increment progress when playing
   useEffect(() => {
@@ -50,13 +46,6 @@ export default function GlobalPlayer({
     }
     return () => clearInterval(timer);
   }, [isPlaying, currentTrack, playbackSpeed]);
-
-  // Reset progress on new track
-  useEffect(() => {
-    if (currentTrack) {
-      setProgress(0);
-    }
-  }, [currentTrack?.id]);
 
   if (!currentTrack) return null;
 
@@ -77,11 +66,11 @@ export default function GlobalPlayer({
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-40 max-w-4xl mx-auto transition-all duration-300">
-      <div className="bg-[#171717] text-[#DADAD4] rounded-2xl sm:rounded-full p-3 sm:px-6 sm:py-3 shadow-2xl border border-white/10 backdrop-blur-md">
+      <div className="bg-[#171717] text-canvas rounded-2xl sm:rounded-full p-3 sm:px-6 sm:py-3 shadow-2xl border border-white/10 backdrop-blur-md">
         {/* Progress Bar (at top of player) */}
         <div className="relative w-full h-1 bg-white/10 rounded-full mb-2.5 overflow-hidden group cursor-pointer">
           <div
-            className="h-full bg-[#FF713F] transition-all duration-200"
+            className="h-full bg-accent-orange transition-all duration-200"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -91,15 +80,15 @@ export default function GlobalPlayer({
           <div className="flex items-center gap-3 w-full sm:w-auto truncate">
             <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center shrink-0">
               {currentTrack.mediaType === 'audio' ? (
-                <Headphones className="w-4 h-4 text-[#D6A82E]" />
+                <Headphones className="w-4 h-4 text-accent-gold" />
               ) : (
-                <Video className="w-4 h-4 text-[#FF713F]" />
+                <Video className="w-4 h-4 text-accent-orange" />
               )}
             </div>
 
             <div className="truncate pr-2 text-left">
               <p className="text-xs font-medium text-white truncate">{currentTrack.title}</p>
-              <p className="text-[10px] text-[#DADAD4]/70 truncate">
+              <p className="text-[10px] text-canvas/70 truncate">
                 {currentTrack.speaker} • {currentTrack.location}
               </p>
             </div>
@@ -107,13 +96,13 @@ export default function GlobalPlayer({
 
           {/* Center: Controls */}
           <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-            <span className="font-mono text-[10px] text-[#DADAD4]/60 hidden md:inline">
+            <span className="font-mono text-[10px] text-canvas/60 hidden md:inline">
               {formatTime(currentSeconds)} / {currentTrack.duration}
             </span>
 
             <button
               onClick={() => setProgress((p) => Math.max(0, p - 3))}
-              className="p-1 text-[#DADAD4]/70 hover:text-white transition-colors cursor-pointer"
+              className="p-1 text-canvas/70 hover:text-white transition-colors cursor-pointer"
               title="Rewind 15s"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -133,7 +122,7 @@ export default function GlobalPlayer({
 
             <button
               onClick={() => setProgress((p) => Math.min(100, p + 3))}
-              className="p-1 text-[#DADAD4]/70 hover:text-white transition-colors cursor-pointer"
+              className="p-1 text-canvas/70 hover:text-white transition-colors cursor-pointer"
               title="Forward 15s"
             >
               <RotateCw className="w-3.5 h-3.5" />
@@ -152,7 +141,7 @@ export default function GlobalPlayer({
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setIsMuted(!isMuted)}
-              className="p-1.5 text-[#DADAD4]/70 hover:text-white transition-colors cursor-pointer"
+              className="p-1.5 text-canvas/70 hover:text-white transition-colors cursor-pointer"
               title={isMuted ? 'Unmute' : 'Mute'}
             >
               {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
@@ -160,7 +149,7 @@ export default function GlobalPlayer({
 
             <button
               onClick={onClose}
-              className="p-1.5 rounded-full text-[#DADAD4]/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              className="p-1.5 rounded-full text-canvas/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               title="Close player"
               aria-label="Close player"
             >

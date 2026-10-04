@@ -2,19 +2,16 @@
 
 import React, { useState } from 'react';
 import {
-  Smartphone,
-  Sparkles,
   Bell,
   CheckCircle2,
   Play,
   Search,
   BookOpen,
   Volume2,
-  Video,
   Compass,
   Headphones,
   Radio,
-  ArrowRight,
+  Smartphone,
 } from 'lucide-react';
 import Logo from './Logo';
 
@@ -46,8 +43,8 @@ export default function MobileAppShowcase() {
           <div className="lg:col-span-6 flex flex-col justify-center">
             {/* Development Announcement Label */}
             <div className="inline-flex items-center gap-2 mb-6 self-start">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-wide bg-[#F1F1EC] border border-black/8 text-[#171717]">
-                <span className="w-2 h-2 rounded-full bg-[#FF713F] animate-pulse" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-wide bg-surface border border-black/8 text-[#171717]">
+                <span className="w-2 h-2 rounded-full bg-accent-orange animate-pulse" />
                 Currently in development
               </span>
             </div>
@@ -59,7 +56,7 @@ export default function MobileAppShowcase() {
             </h2>
 
             {/* Exact Section Description */}
-            <p className="text-[15px] sm:text-[16px] text-[#55554F] leading-[1.65] font-sans mb-8">
+            <p className="text-[15px] sm:text-[16px] text-secondary leading-[1.65] font-sans mb-8">
               We are building a dedicated mobile experience to bring Islamic knowledge closer to
               every Muslim in Malawi. Listen to your favourite preachings, watch khutbahs, and stay
               connected to meaningful teachings, all from your phone.
@@ -67,19 +64,19 @@ export default function MobileAppShowcase() {
 
             {/* Key Upcoming App Features list */}
             <div className="space-y-3 mb-8">
-              <div className="flex items-center gap-3 text-xs text-[#55554F]">
+              <div className="flex items-center gap-3 text-xs text-secondary">
                 <span className="w-5 h-5 rounded-full bg-black/5 flex items-center justify-center text-[#171717] font-semibold">
                   ✓
                 </span>
                 <span>Background audio playback for commutes and daily work</span>
               </div>
-              <div className="flex items-center gap-3 text-xs text-[#55554F]">
+              <div className="flex items-center gap-3 text-xs text-secondary">
                 <span className="w-5 h-5 rounded-full bg-black/5 flex items-center justify-center text-[#171717] font-semibold">
                   ✓
                 </span>
                 <span>Offline caching to save mobile data in low-coverage areas</span>
               </div>
-              <div className="flex items-center gap-3 text-xs text-[#55554F]">
+              <div className="flex items-center gap-3 text-xs text-secondary">
                 <span className="w-5 h-5 rounded-full bg-black/5 flex items-center justify-center text-[#171717] font-semibold">
                   ✓
                 </span>
@@ -88,11 +85,11 @@ export default function MobileAppShowcase() {
             </div>
 
             {/* Notification Registration Form ("Be the first to know") */}
-            <div className="p-6 rounded-2xl bg-[#F1F1EC] border border-black/8 max-w-md">
+            <div className="p-6 rounded-2xl bg-surface border border-black/8 max-w-md">
               <h3 className="font-serif-heading text-xl text-[#171717] font-medium mb-1">
                 Be the first to know
               </h3>
-              <p className="text-xs text-[#55554F] mb-4">
+              <p className="text-xs text-secondary mb-4">
                 Register to receive an early access invite when the mobile app enters preview in
                 Malawi.
               </p>
@@ -120,7 +117,7 @@ export default function MobileAppShowcase() {
                       className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all ${
                         notificationType === 'email'
                           ? 'bg-[#171717] text-white'
-                          : 'bg-black/5 text-[#55554F]'
+                          : 'bg-black/5 text-secondary'
                       }`}
                     >
                       Email update
@@ -131,7 +128,7 @@ export default function MobileAppShowcase() {
                       className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all ${
                         notificationType === 'whatsapp'
                           ? 'bg-[#171717] text-white'
-                          : 'bg-black/5 text-[#55554F]'
+                          : 'bg-black/5 text-secondary'
                       }`}
                     >
                       WhatsApp SMS
@@ -150,7 +147,7 @@ export default function MobileAppShowcase() {
                           : '+265 (Malawi phone number)'
                       }
                       required
-                      className="flex-1 bg-white text-xs text-[#171717] placeholder-[#55554F]/70 px-3.5 py-2.5 rounded-xl border border-black/10 focus:outline-none focus:border-[#171717]"
+                      className="flex-1 bg-white text-xs text-[#171717] placeholder-secondary/70 px-3.5 py-2.5 rounded-xl border border-black/10 focus:outline-none focus:border-[#171717]"
                     />
                     <button
                       type="submit"
@@ -160,7 +157,7 @@ export default function MobileAppShowcase() {
                       {isSubmitting ? 'Joining...' : 'Notify me'}
                     </button>
                   </div>
-                  <p className="text-[10px] text-[#55554F]/80">
+                  <p className="text-[10px] text-secondary/80">
                     No spam. You will only receive a notification upon release.
                   </p>
                 </form>
@@ -171,7 +168,7 @@ export default function MobileAppShowcase() {
           {/* RIGHT: High Quality Smartphone Mockup with Real In-App UI */}
           <div className="lg:col-span-6 flex items-center justify-center">
             {/* Phone Chassis Container */}
-            <div className="relative w-[300px] sm:w-[330px] rounded-[44px] bg-[#1C1C1A] p-3 shadow-2xl border-[5px] border-[#2C2C28] ring-1 ring-black/20">
+            <div className="relative w-75 sm:w-82.5 rounded-[44px] bg-[#1C1C1A] p-3 shadow-2xl border-[5px] border-[#2C2C28] ring-1 ring-black/20">
               {/* Dynamic Island / Speaker Pill */}
               <div className="absolute top-6 left-1/2 -translate-x-1/2 w-24 h-5 bg-[#0D0D0C] rounded-full z-30 flex items-center justify-between px-3">
                 <span className="w-2 h-2 rounded-full bg-black/80" />
@@ -179,7 +176,7 @@ export default function MobileAppShowcase() {
               </div>
 
               {/* Phone Screen Glass */}
-              <div className="relative w-full h-[620px] bg-[#DADAD4] rounded-[36px] overflow-hidden flex flex-col justify-between text-[#171717] select-none border border-black/10">
+              <div className="relative w-full h-155 bg-canvas rounded-[36px] overflow-hidden flex flex-col justify-between text-[#171717] select-none border border-black/10">
                 {/* Status Bar */}
                 <div className="pt-3 px-6 pb-2 flex items-center justify-between text-[11px] font-medium text-[#171717] z-20">
                   <span>09:41</span>
@@ -196,14 +193,14 @@ export default function MobileAppShowcase() {
                   {/* App Header */}
                   <div className="flex items-center justify-between">
                     <Logo size="sm" />
-                    <div className="w-7 h-7 rounded-full bg-[#F1F1EC] border border-black/8 flex items-center justify-center">
-                      <Bell className="w-3.5 h-3.5 text-[#55554F]" />
+                    <div className="w-7 h-7 rounded-full bg-surface border border-black/8 flex items-center justify-center">
+                      <Bell className="w-3.5 h-3.5 text-secondary" />
                     </div>
                   </div>
 
                   {/* App Search Bar */}
-                  <div className="flex items-center gap-2 bg-[#F1F1EC] px-3 py-2 rounded-xl border border-black/6 text-xs text-[#55554F]">
-                    <Search className="w-3.5 h-3.5 text-[#55554F]" />
+                  <div className="flex items-center gap-2 bg-surface px-3 py-2 rounded-xl border border-black/6 text-xs text-secondary">
+                    <Search className="w-3.5 h-3.5 text-secondary" />
                     <span className="text-[11px]">Search khutbahs & preachings...</span>
                   </div>
 
@@ -212,32 +209,32 @@ export default function MobileAppShowcase() {
                     <span className="px-2.5 py-1 rounded-full bg-[#171717] text-white">
                       Preachings
                     </span>
-                    <span className="px-2.5 py-1 rounded-full bg-[#F1F1EC] text-[#55554F] border border-black/6">
+                    <span className="px-2.5 py-1 rounded-full bg-surface text-secondary border border-black/6">
                       Khutbahs
                     </span>
-                    <span className="px-2.5 py-1 rounded-full bg-[#F1F1EC] text-[#55554F] border border-black/6">
+                    <span className="px-2.5 py-1 rounded-full bg-surface text-secondary border border-black/6">
                       Quran
                     </span>
                   </div>
 
                   {/* App Featured Preaching Card */}
-                  <div className="p-3.5 rounded-2xl bg-[#F1F1EC] border border-black/8 shadow-2xs">
+                  <div className="p-3.5 rounded-2xl bg-surface border border-black/8 shadow-2xs">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[9px] uppercase font-semibold text-[#FF713F] tracking-wide">
+                      <span className="text-[9px] uppercase font-semibold text-accent-orange tracking-wide">
                         Featured Khutbah
                       </span>
-                      <span className="text-[9px] font-mono text-[#55554F]">28:40</span>
+                      <span className="text-[9px] font-mono text-secondary">28:40</span>
                     </div>
                     <h4 className="font-serif-heading text-base font-semibold text-[#171717] leading-tight mb-1">
                       The Importance of Salah
                     </h4>
-                    <p className="text-[10px] text-[#55554F] mb-3">
+                    <p className="text-[10px] text-secondary mb-3">
                       Sheikh Yusuf Banda • Blantyre Central Mosque
                     </p>
 
                     <div className="flex items-center justify-between pt-2 border-t border-black/5">
-                      <span className="inline-flex items-center gap-1 text-[10px] text-[#55554F]">
-                        <Headphones className="w-3 h-3 text-[#D6A82E]" />
+                      <span className="inline-flex items-center gap-1 text-[10px] text-secondary">
+                        <Headphones className="w-3 h-3 text-accent-gold" />
                         <span>Chichewa audio</span>
                       </span>
                       <div className="w-6 h-6 rounded-full bg-[#171717] text-white flex items-center justify-center shadow-xs">
@@ -248,17 +245,17 @@ export default function MobileAppShowcase() {
 
                   {/* Recent uploads mock item */}
                   <div className="space-y-2">
-                    <span className="text-[10px] font-semibold text-[#55554F] uppercase tracking-wider block">
+                    <span className="text-[10px] font-semibold text-secondary uppercase tracking-wider block">
                       Recently Added
                     </span>
-                    <div className="p-2.5 rounded-xl bg-[#F1F1EC] border border-black/6 flex items-center justify-between">
+                    <div className="p-2.5 rounded-xl bg-surface border border-black/6 flex items-center justify-between">
                       <div className="truncate pr-2">
                         <p className="text-[11px] font-medium text-[#171717] truncate">
                           Preparing Our Hearts for Ramadan
                         </p>
-                        <p className="text-[9px] text-[#55554F]">Ustadh Ibrahim Mataka • Lilongwe</p>
+                        <p className="text-[9px] text-secondary">Ustadh Ibrahim Mataka • Lilongwe</p>
                       </div>
-                      <span className="px-1.5 py-0.5 rounded bg-black/5 text-[9px] text-[#55554F] shrink-0">
+                      <span className="px-1.5 py-0.5 rounded bg-black/5 text-[9px] text-secondary shrink-0">
                         Video
                       </span>
                     </div>
@@ -269,7 +266,7 @@ export default function MobileAppShowcase() {
                 <div className="mx-3 mb-2 p-2.5 rounded-2xl bg-[#171717] text-white flex items-center justify-between shadow-lg">
                   <div className="flex items-center gap-2 truncate">
                     <div className="w-7 h-7 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                      <Volume2 className="w-3.5 h-3.5 text-[#FF713F]" />
+                      <Volume2 className="w-3.5 h-3.5 text-accent-orange" />
                     </div>
                     <div className="truncate">
                       <p className="text-[10px] font-medium text-white truncate">
@@ -284,7 +281,7 @@ export default function MobileAppShowcase() {
                 </div>
 
                 {/* Mobile Bottom Tab Bar */}
-                <div className="bg-[#F1F1EC] border-t border-black/8 py-2.5 px-6 flex items-center justify-between text-[#55554F]">
+                <div className="bg-surface border-t border-black/8 py-2.5 px-6 flex items-center justify-between text-secondary">
                   <div className="flex flex-col items-center gap-0.5 text-[#171717]">
                     <Radio className="w-3.5 h-3.5" />
                     <span className="text-[8px] font-medium">Home</span>

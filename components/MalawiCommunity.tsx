@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { MapPin, Radio, Compass, ArrowRight, Building2, Sparkles } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 import { MALAWI_HUBS } from '../data/contentData';
 import { MalawiHub } from '../types/content';
 
@@ -14,21 +14,21 @@ export default function MalawiCommunity() {
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
           <div className="max-w-2xl">
-            <span className="text-[11px] font-semibold tracking-widest uppercase text-[#55554F] mb-3 block">
+            <span className="text-[11px] font-semibold tracking-widest uppercase text-secondary mb-3 block">
               National Footprint
             </span>
             <h2 className="font-serif-heading text-3xl sm:text-4xl md:text-5xl font-normal text-[#171717] tracking-tight mb-4">
               Rooted in Malawi. <br />
               Connected through knowledge.
             </h2>
-            <p className="text-[15px] sm:text-[16px] text-[#55554F] leading-relaxed">
+            <p className="text-[15px] sm:text-[16px] text-secondary leading-relaxed">
               Bringing together Islamic voices, teachings, and communities from across Malawi through
               accessible digital media.
             </p>
           </div>
 
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#F1F1EC] text-xs font-medium text-[#171717] border border-black/8 self-start">
-            <span className="w-2 h-2 rounded-full bg-[#D6A82E] animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface text-xs font-medium text-[#171717] border border-black/8 self-start">
+            <span className="w-2 h-2 rounded-full bg-accent-gold animate-pulse" />
             <span>6 Primary Hubs Archiving Content</span>
           </div>
         </div>
@@ -36,15 +36,15 @@ export default function MalawiCommunity() {
         {/* Interactive Map & Hub Details Showcase */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           {/* LEFT: Abstract Malawi Map Visualization */}
-          <div className="lg:col-span-6 bg-[#F1F1EC] rounded-3xl p-6 sm:p-8 border border-black/8 relative flex flex-col items-center justify-center min-h-[440px]">
+          <div className="lg:col-span-6 bg-surface rounded-3xl p-6 sm:p-8 border border-black/8 relative flex flex-col items-center justify-center min-h-110">
             {/* Map Header */}
-            <div className="w-full flex items-center justify-between text-xs text-[#55554F] mb-4">
+            <div className="w-full flex items-center justify-between text-xs text-secondary mb-4">
               <span className="font-mono text-[11px]">GEOGRAPHIC NETWORK</span>
               <span className="text-[11px]">Click nodes to explore</span>
             </div>
 
             {/* Abstract SVG representation of Malawi with delicate connection lines */}
-            <div className="relative w-full max-w-[280px] sm:max-w-[320px] aspect-[1/1.6] flex items-center justify-center">
+            <div className="relative w-full max-w-70 sm:max-w-[320px] aspect-[1/1.6] flex items-center justify-center">
               <svg
                 viewBox="0 0 100 160"
                 className="w-full h-full text-black/10 overflow-visible"
@@ -135,7 +135,7 @@ export default function MalawiCommunity() {
                         className={`text-[5px] font-sans transition-all ${
                           isSelected
                             ? 'font-bold fill-[#171717]'
-                            : 'fill-[#55554F] group-hover:fill-[#171717]'
+                            : 'fill-secondary group-hover:fill-[#171717]'
                         }`}
                       >
                         {hub.name.replace(' Hub', '')}
@@ -147,9 +147,9 @@ export default function MalawiCommunity() {
             </div>
 
             {/* Bottom Caption */}
-            <div className="w-full pt-4 mt-2 border-t border-black/6 flex items-center justify-between text-[11px] text-[#55554F]">
+            <div className="w-full pt-4 mt-2 border-t border-black/6 flex items-center justify-between text-[11px] text-secondary">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-[#FF713F]" />
+                <span className="w-2 h-2 rounded-full bg-accent-orange" />
                 Selected Hub: {activeHub.name}
               </span>
               <span className="font-mono">{activeHub.region} Region</span>
@@ -158,12 +158,12 @@ export default function MalawiCommunity() {
 
           {/* RIGHT: Selected Hub Details Card */}
           <div className="lg:col-span-6 space-y-4">
-            <div className="p-7 sm:p-8 rounded-3xl bg-[#F1F1EC] border border-black/8 shadow-xs">
+            <div className="p-7 sm:p-8 rounded-3xl bg-surface border border-black/8 shadow-xs">
               <div className="flex items-center justify-between mb-4">
                 <span className="px-3 py-1 rounded-full text-[11px] font-medium bg-black/5 text-[#171717]">
                   {activeHub.region} Malawi Region
                 </span>
-                <span className="text-xs font-mono text-[#55554F]">
+                <span className="text-xs font-mono text-secondary">
                   {activeHub.recordingsCount} Archived Recordings
                 </span>
               </div>
@@ -172,18 +172,18 @@ export default function MalawiCommunity() {
                 {activeHub.name}
               </h3>
 
-              <div className="flex items-center gap-2 text-xs text-[#55554F] mb-6">
-                <Building2 className="w-3.5 h-3.5 text-[#D6A82E]" />
+              <div className="flex items-center gap-2 text-xs text-secondary mb-6">
+                <Building2 className="w-3.5 h-3.5 text-accent-gold" />
                 <span>{activeHub.majorMasjid}</span>
               </div>
 
-              <p className="text-sm text-[#55554F] leading-relaxed mb-6">
+              <p className="text-sm text-secondary leading-relaxed mb-6">
                 {activeHub.description}
               </p>
 
               {/* Featured Scholars from this hub */}
               <div className="mb-6 pt-4 border-t border-black/6">
-                <span className="text-[11px] font-semibold tracking-wider uppercase text-[#55554F] block mb-2">
+                <span className="text-[11px] font-semibold tracking-wider uppercase text-secondary block mb-2">
                   Active Voices & Teachers
                 </span>
                 <div className="flex flex-wrap gap-2">
@@ -200,7 +200,7 @@ export default function MalawiCommunity() {
 
               {/* District Switcher Buttons */}
               <div className="pt-4 border-t border-black/6">
-                <span className="text-[11px] font-semibold text-[#55554F] uppercase tracking-wider block mb-2.5">
+                <span className="text-[11px] font-semibold text-secondary uppercase tracking-wider block mb-2.5">
                   Select Hub Location:
                 </span>
                 <div className="grid grid-cols-3 gap-2">
@@ -211,7 +211,7 @@ export default function MalawiCommunity() {
                       className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all text-center truncate cursor-pointer ${
                         activeHub.id === hub.id
                           ? 'bg-[#171717] text-white'
-                          : 'bg-black/5 text-[#55554F] hover:text-[#171717]'
+                          : 'bg-black/5 text-secondary hover:text-[#171717]'
                       }`}
                     >
                       {hub.name.replace(' Hub', '')}

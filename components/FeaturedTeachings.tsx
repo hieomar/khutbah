@@ -10,9 +10,7 @@ import {
   MapPin,
   Sparkles,
   Info,
-  Filter,
   Check,
-  ChevronRight,
   Share2,
 } from 'lucide-react';
 import { TEACHINGS, CATEGORIES } from '../data/contentData';
@@ -87,21 +85,21 @@ export default function FeaturedTeachings({
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 sm:mb-12 gap-6">
           <div className="max-w-xl">
-            <span className="text-[11px] font-semibold tracking-widest uppercase text-[#55554F] mb-3 block">
+            <span className="text-[11px] font-semibold tracking-widest uppercase text-secondary mb-3 block">
               Curated Recordings
             </span>
             <h2 className="font-serif-heading text-3xl sm:text-4xl md:text-5xl font-normal text-[#171717] tracking-tight mb-4">
               Featured teachings
             </h2>
-            <p className="text-[15px] sm:text-[16px] text-[#55554F] leading-relaxed">
+            <p className="text-[15px] sm:text-[16px] text-secondary leading-relaxed">
               Explore authentic Friday sermons, educational lectures, and Quranic recitations
               archived from across Malawi.
             </p>
           </div>
 
           {/* Quick counts */}
-          <div className="flex items-center gap-2 text-xs text-[#55554F] bg-[#F1F1EC] px-4 py-2 rounded-full border border-black/8 self-start md:self-auto">
-            <span className="w-2 h-2 rounded-full bg-[#FF713F]" />
+          <div className="flex items-center gap-2 text-xs text-secondary bg-surface px-4 py-2 rounded-full border border-black/8 self-start md:self-auto">
+            <span className="w-2 h-2 rounded-full bg-accent-orange" />
             <span>
               Showing <strong>{filteredTeachings.length}</strong> of {TEACHINGS.length} teachings
             </span>
@@ -109,23 +107,23 @@ export default function FeaturedTeachings({
         </div>
 
         {/* Filter Controls Bar */}
-        <div className="bg-[#F1F1EC] p-3 sm:p-4 rounded-2xl border border-black/8 mb-8 space-y-3">
+        <div className="bg-surface p-3 sm:p-4 rounded-2xl border border-black/8 mb-8 space-y-3">
           {/* Top Bar: Search Input & Format Filter */}
           <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
             {/* Search Input */}
             <div className="relative w-full sm:w-80">
-              <Search className="w-4 h-4 text-[#55554F] absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-secondary absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search teachings, scholars, topics..."
-                className="w-full bg-white/80 focus:bg-white text-xs text-[#171717] placeholder-[#55554F]/70 pl-9 pr-4 py-2.5 rounded-full border border-black/8 focus:outline-none focus:border-[#171717] transition-all"
+                className="w-full bg-white/80 focus:bg-white text-xs text-[#171717] placeholder-secondary/70 pl-9 pr-4 py-2.5 rounded-full border border-black/8 focus:outline-none focus:border-[#171717] transition-all"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#55554F] hover:text-[#171717]"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-secondary hover:text-[#171717]"
                 >
                   Clear
                 </button>
@@ -139,7 +137,7 @@ export default function FeaturedTeachings({
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                   mediaFilter === 'all'
                     ? 'bg-[#171717] text-white shadow-xs'
-                    : 'text-[#55554F] hover:text-[#171717]'
+                    : 'text-secondary hover:text-[#171717]'
                 }`}
               >
                 All Formats
@@ -149,7 +147,7 @@ export default function FeaturedTeachings({
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                   mediaFilter === 'audio'
                     ? 'bg-[#171717] text-white shadow-xs'
-                    : 'text-[#55554F] hover:text-[#171717]'
+                    : 'text-secondary hover:text-[#171717]'
                 }`}
               >
                 <Volume2 className="w-3.5 h-3.5" />
@@ -160,7 +158,7 @@ export default function FeaturedTeachings({
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                   mediaFilter === 'video'
                     ? 'bg-[#171717] text-white shadow-xs'
-                    : 'text-[#55554F] hover:text-[#171717]'
+                    : 'text-secondary hover:text-[#171717]'
                 }`}
               >
                 <Video className="w-3.5 h-3.5" />
@@ -173,7 +171,7 @@ export default function FeaturedTeachings({
           <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-black/5">
             {/* Category Pills */}
             <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto py-1">
-              <span className="text-[11px] font-medium text-[#55554F] mr-1 hidden sm:inline">
+              <span className="text-[11px] font-medium text-secondary mr-1 hidden sm:inline">
                 Category:
               </span>
               <button
@@ -181,7 +179,7 @@ export default function FeaturedTeachings({
                 className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
                   selectedCategory === 'all'
                     ? 'bg-[#171717] text-white'
-                    : 'bg-black/5 text-[#55554F] hover:text-[#171717]'
+                    : 'bg-black/5 text-secondary hover:text-[#171717]'
                 }`}
               >
                 All Categories
@@ -193,7 +191,7 @@ export default function FeaturedTeachings({
                   className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
                     selectedCategory === cat.id
                       ? 'bg-[#171717] text-white'
-                      : 'bg-black/5 text-[#55554F] hover:text-[#171717]'
+                      : 'bg-black/5 text-secondary hover:text-[#171717]'
                   }`}
                 >
                   {cat.title}
@@ -202,8 +200,8 @@ export default function FeaturedTeachings({
             </div>
 
             {/* District Selector */}
-            <div className="flex items-center gap-1.5 text-[11px] text-[#55554F]">
-              <MapPin className="w-3.5 h-3.5 text-[#55554F]" />
+            <div className="flex items-center gap-1.5 text-[11px] text-secondary">
+              <MapPin className="w-3.5 h-3.5 text-secondary" />
               <select
                 value={districtFilter}
                 onChange={(e) => setDistrictFilter(e.target.value)}
@@ -229,9 +227,9 @@ export default function FeaturedTeachings({
               return (
                 <div
                   key={item.id}
-                  className={`group relative rounded-2xl bg-[#F1F1EC] border transition-all duration-300 p-5 sm:p-6 flex flex-col justify-between ${
+                  className={`group relative rounded-2xl bg-surface border transition-all duration-300 p-5 sm:p-6 flex flex-col justify-between ${
                     isCurrentPlaying
-                      ? 'border-[#FF713F] shadow-sm bg-[#ECECE5]'
+                      ? 'border-accent-orange shadow-sm bg-[#ECECE5]'
                       : 'border-black/8 hover:border-black/20 hover:-translate-y-0.5'
                   }`}
                 >
@@ -243,23 +241,23 @@ export default function FeaturedTeachings({
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium ${
                             item.mediaType === 'audio'
                               ? 'bg-[#171717] text-white'
-                              : 'bg-[#FF713F]/15 text-[#171717] border border-[#FF713F]/30'
+                              : 'bg-accent-orange/15 text-[#171717] border border-accent-orange/30'
                           }`}
                         >
                           {item.mediaType === 'audio' ? (
-                            <Volume2 className="w-3 h-3 text-[#D6A82E]" />
+                            <Volume2 className="w-3 h-3 text-accent-gold" />
                           ) : (
-                            <Video className="w-3 h-3 text-[#FF713F]" />
+                            <Video className="w-3 h-3 text-accent-orange" />
                           )}
                           <span className="capitalize">{item.mediaType}</span>
                         </span>
 
-                        <span className="text-[11px] font-medium text-[#55554F] bg-black/5 px-2 py-0.5 rounded-md">
+                        <span className="text-[11px] font-medium text-secondary bg-black/5 px-2 py-0.5 rounded-md">
                           {item.categoryLabel}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2 text-xs text-[#55554F]">
+                      <div className="flex items-center gap-2 text-xs text-secondary">
                         <Clock className="w-3.5 h-3.5" />
                         <span>{item.duration}</span>
                       </div>
@@ -271,16 +269,16 @@ export default function FeaturedTeachings({
                     </h3>
 
                     {/* Speaker info */}
-                    <div className="flex items-center gap-2 text-xs text-[#55554F] mb-3">
+                    <div className="flex items-center gap-2 text-xs text-secondary mb-3">
                       <span className="font-semibold text-[#171717]">{item.speaker}</span>
                       <span>•</span>
                       <span>{item.speakerTitle}</span>
                     </div>
 
                     {/* Location & Language */}
-                    <div className="flex flex-wrap items-center gap-y-1 gap-x-3 text-[11px] text-[#55554F] mb-4">
+                    <div className="flex flex-wrap items-center gap-y-1 gap-x-3 text-[11px] text-secondary mb-4">
                       <span className="inline-flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-[#55554F]" />
+                        <MapPin className="w-3 h-3 text-secondary" />
                         {item.location}
                       </span>
                       <span>•</span>
@@ -290,7 +288,7 @@ export default function FeaturedTeachings({
                     </div>
 
                     {/* Description preview */}
-                    <p className="text-xs sm:text-[13px] text-[#55554F] leading-relaxed line-clamp-2 mb-6">
+                    <p className="text-xs sm:text-[13px] text-secondary leading-relaxed line-clamp-2 mb-6">
                       {item.description}
                     </p>
                   </div>
@@ -302,7 +300,7 @@ export default function FeaturedTeachings({
                       onClick={() => onPlayTeaching(item)}
                       className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium transition-all cursor-pointer ${
                         isCurrentPlaying
-                          ? 'bg-[#FF713F] text-white shadow-xs'
+                          ? 'bg-accent-orange text-white shadow-xs'
                           : 'bg-[#171717] text-white hover:bg-black/90 shadow-2xs'
                       }`}
                     >
@@ -314,7 +312,7 @@ export default function FeaturedTeachings({
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => onOpenDetails(item)}
-                        className="inline-flex items-center gap-1 text-xs text-[#55554F] hover:text-[#171717] px-2.5 py-1.5 rounded-full hover:bg-black/5 transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 text-xs text-secondary hover:text-[#171717] px-2.5 py-1.5 rounded-full hover:bg-black/5 transition-colors cursor-pointer"
                         title="View lecture details and key takeaways"
                       >
                         <Info className="w-3.5 h-3.5" />
@@ -323,7 +321,7 @@ export default function FeaturedTeachings({
 
                       <button
                         onClick={(e) => handleShare(item, e)}
-                        className="p-1.5 text-[#55554F] hover:text-[#171717] rounded-full hover:bg-black/5 transition-colors cursor-pointer"
+                        className="p-1.5 text-secondary hover:text-[#171717] rounded-full hover:bg-black/5 transition-colors cursor-pointer"
                         title="Copy link to teaching"
                         aria-label="Share"
                       >
@@ -341,12 +339,12 @@ export default function FeaturedTeachings({
           </div>
         ) : (
           /* Graceful Empty State */
-          <div className="p-12 text-center rounded-2xl bg-[#F1F1EC] border border-black/8">
-            <Sparkles className="w-8 h-8 text-[#55554F] mx-auto mb-3 opacity-60" />
+          <div className="p-12 text-center rounded-2xl bg-surface border border-black/8">
+            <Sparkles className="w-8 h-8 text-secondary mx-auto mb-3 opacity-60" />
             <h3 className="font-serif-heading text-xl text-[#171717] mb-2">
               No matching teachings found
             </h3>
-            <p className="text-xs text-[#55554F] max-w-md mx-auto mb-6">
+            <p className="text-xs text-secondary max-w-md mx-auto mb-6">
               We couldn&apos;t find any recordings matching your current filters. Try resetting your search
               or exploring another category.
             </p>

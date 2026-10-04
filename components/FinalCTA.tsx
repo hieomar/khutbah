@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ArrowRight, Smartphone, Sparkles, BookOpen } from 'lucide-react';
+import { ArrowRight, Smartphone, BookOpen } from 'lucide-react';
 
 interface FinalCTAProps {
   onExploreClick?: () => void;
@@ -23,8 +23,8 @@ export default function FinalCTA({ onExploreClick, onAppClick }: FinalCTAProps) 
       <div className="max-w-4xl mx-auto text-center">
         {/* Subtle Tag */}
         <div className="inline-flex items-center gap-2 mb-6">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-wide uppercase bg-[#F1F1EC] border border-black/8 text-[#55554F]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#FF713F]" />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-wide uppercase bg-surface border border-black/8 text-secondary">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent-orange" />
             Your Digital Sanctuary
           </span>
         </div>
@@ -35,7 +35,7 @@ export default function FinalCTA({ onExploreClick, onAppClick }: FinalCTAProps) 
         </h2>
 
         {/* Exact Final Description */}
-        <p className="text-[16px] sm:text-[18px] text-[#55554F] leading-relaxed max-w-xl mx-auto mb-10">
+        <p className="text-[16px] sm:text-[18px] text-secondary leading-relaxed max-w-xl mx-auto mb-10">
           Discover meaningful Islamic content today and be among the first to experience our
           upcoming mobile application.
         </p>
@@ -46,16 +46,16 @@ export default function FinalCTA({ onExploreClick, onAppClick }: FinalCTAProps) 
             onClick={() => (onExploreClick ? onExploreClick() : scrollTo('explore-content'))}
             className="group inline-flex items-center gap-2.5 px-7 py-4 rounded-full bg-[#171717] text-white text-[15px] font-medium shadow-xs hover:bg-black/90 active:scale-98 transition-all cursor-pointer"
           >
-            <BookOpen className="w-4 h-4 text-[#D6A82E]" />
+            <BookOpen className="w-4 h-4 text-accent-gold" />
             <span>Explore content</span>
-            <ArrowRight className="w-4 h-4 text-[#FF713F] group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-4 h-4 text-accent-orange group-hover:translate-x-1 transition-transform" />
           </button>
 
           <button
             onClick={() => (onAppClick ? onAppClick() : scrollTo('mobile-app'))}
             className="inline-flex items-center gap-2.5 px-6 py-4 rounded-full bg-transparent hover:bg-black/5 text-[#171717] text-[15px] font-medium border border-black/15 active:scale-98 transition-all cursor-pointer"
           >
-            <Smartphone className="w-4 h-4 text-[#55554F]" />
+            <Smartphone className="w-4 h-4 text-secondary" />
             <span>Get app updates</span>
           </button>
         </div>

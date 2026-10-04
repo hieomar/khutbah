@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowUp, Heart, Globe, Radio } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 import Logo from './Logo';
 
 export default function Footer() {
@@ -19,7 +19,7 @@ export default function Footer() {
           hour12: false,
         }).format(now);
         setMalawiTime(timeStr);
-      } catch (e) {
+      } catch {
         setMalawiTime('12:00:00');
       }
     };
@@ -49,13 +49,13 @@ export default function Footer() {
           {/* Brand & Mission */}
           <div className="md:col-span-5 space-y-4">
             <Logo size="md" />
-            <p className="text-xs sm:text-[13px] text-[#55554F] leading-relaxed max-w-sm">
+            <p className="text-xs sm:text-[13px] text-secondary leading-relaxed max-w-sm">
               An accessible digital sanctuary for Islamic preachings, Friday khutbahs, Quranic
               recitations, and educational discussions across Malawi.
             </p>
             {/* Live Malawi Local Time indicator */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F1F1EC] border border-black/6 text-[11px] text-[#55554F]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#D6A82E]" />
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-black/6 text-[11px] text-secondary">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent-gold" />
               <span>Blantyre & Lilongwe Time:</span>
               <span className="font-mono font-medium text-[#171717]">{malawiTime} CAT (UTC+2)</span>
             </div>
@@ -66,7 +66,7 @@ export default function Footer() {
             <span className="text-[11px] font-semibold uppercase tracking-wider text-[#171717] block">
               Platform Navigation
             </span>
-            <ul className="space-y-2 text-xs text-[#55554F]">
+            <ul className="space-y-2 text-xs text-secondary">
               <li>
                 <button
                   onClick={() => scrollTo('explore-content')}
@@ -113,7 +113,7 @@ export default function Footer() {
                   className="hover:text-[#171717] transition-colors cursor-pointer flex items-center gap-1.5"
                 >
                   <span>Upcoming Mobile App</span>
-                  <span className="text-[10px] text-[#FF713F] font-semibold">Soon</span>
+                  <span className="text-[10px] text-accent-orange font-semibold">Soon</span>
                 </button>
               </li>
             </ul>
@@ -124,7 +124,7 @@ export default function Footer() {
             <span className="text-[11px] font-semibold uppercase tracking-wider text-[#171717] block">
               Malawi Regions Archiving
             </span>
-            <div className="grid grid-cols-2 gap-2 text-xs text-[#55554F]">
+            <div className="grid grid-cols-2 gap-2 text-xs text-secondary">
               <span className="hover:text-[#171717]">Blantyre Central</span>
               <span className="hover:text-[#171717]">Lilongwe Area 2</span>
               <span className="hover:text-[#171717]">Zomba Jumu’ah</span>
@@ -134,10 +134,10 @@ export default function Footer() {
             </div>
 
             <div className="pt-4 border-t border-black/6">
-              <span className="text-[11px] text-[#55554F] block mb-2 font-medium">
+              <span className="text-[11px] text-secondary block mb-2 font-medium">
                 Community channels
               </span>
-              <div className="flex items-center gap-3 text-xs text-[#55554F]">
+              <div className="flex items-center gap-3 text-xs text-secondary">
                 <span className="hover:text-[#171717] cursor-pointer">Facebook</span>
                 <span>•</span>
                 <span className="hover:text-[#171717] cursor-pointer">YouTube</span>
@@ -151,7 +151,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#55554F]">
+        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-secondary">
           {/* Statement */}
           <p className="font-serif-heading text-base text-[#171717]">
             &ldquo;Connecting hearts through Islamic knowledge.&rdquo;
@@ -162,7 +162,7 @@ export default function Footer() {
             <span>&copy; {new Date().getFullYear()} Khutbah Platform. All rights reserved.</span>
             <button
               onClick={scrollToTop}
-              className="p-2 rounded-full bg-[#F1F1EC] hover:bg-black/5 text-[#171717] border border-black/8 transition-colors cursor-pointer"
+              className="p-2 rounded-full bg-surface hover:bg-black/5 text-[#171717] border border-black/8 transition-colors cursor-pointer"
               title="Scroll to top"
               aria-label="Back to top"
             >

@@ -77,7 +77,7 @@ export default function ParticleNetwork() {
     // Cluster Centers (creates the organic interconnected structure seen in Antimetal)
     const clusterCount = 5;
     const clusters: { x: number; y: number; driftX: number; driftY: number; angle: number }[] = [];
-    
+
     for (let i = 0; i < clusterCount; i++) {
       const angle = (i / clusterCount) * Math.PI * 2;
       const dist = (Math.min(width, height) * 0.28) * (0.5 + Math.random() * 0.5);
@@ -367,7 +367,7 @@ export default function ParticleNetwork() {
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-[380px] sm:h-[460px] md:h-[540px] lg:h-[600px] flex items-center justify-center select-none"
+      className="relative w-full h-95 sm:h-115 md:h-135 lg:h-150 flex items-center justify-center select-none"
     >
       <canvas
         ref={canvasRef}
@@ -375,10 +375,10 @@ export default function ParticleNetwork() {
         style={{ opacity: isInteractive ? 1 : 0 }}
         aria-label="Interactive particle visualization representing interconnected Islamic knowledge across Malawi"
       />
-      
+
       {/* Subtle indicator caption */}
-      <div className="absolute bottom-2 right-4 flex items-center gap-2 pointer-events-none opacity-40 hover:opacity-80 transition-opacity text-[11px] text-[#55554F]">
-        <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#FF713F] animate-ping" />
+      <div className="absolute bottom-2 right-4 flex items-center gap-2 pointer-events-none opacity-40 hover:opacity-80 transition-opacity text-[11px] text-secondary">
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent-orange animate-ping" />
         <span>Live Knowledge Network • Malawi</span>
       </div>
     </div>

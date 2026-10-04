@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ArrowRight, Smartphone, Radio, Sparkles } from 'lucide-react';
+import { ArrowRight, Smartphone } from 'lucide-react';
 import ParticleNetwork from './ParticleNetwork';
 
 interface HeroProps {
@@ -26,8 +26,8 @@ export default function Hero({ onExploreClick, onAppClick }: HeroProps) {
         <div className="lg:col-span-6 flex flex-col justify-center z-10">
           {/* Subtle Platform Tag */}
           <div className="inline-flex items-center gap-2 mb-6 self-start">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-wide uppercase bg-[#F1F1EC] border border-black/8 text-[#55554F]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#D6A82E]" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-wide uppercase bg-surface border border-black/8 text-secondary">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent-gold" />
               Islamic Media Platform • Malawi
             </span>
           </div>
@@ -39,7 +39,7 @@ export default function Hero({ onExploreClick, onAppClick }: HeroProps) {
           </h1>
 
           {/* Exact Hero Description */}
-          <p className="text-[15px] sm:text-[16px] leading-[1.6] text-[#55554F] font-sans max-w-[440px] mb-8 sm:mb-10">
+          <p className="text-[15px] sm:text-[16px] leading-[1.6] text-secondary font-sans max-w-110 mb-8 sm:mb-10">
             Discover Islamic preachings, khutbahs, and teachings from across Malawi. Listen to
             meaningful reminders or watch inspiring lectures, anytime, anywhere.
           </p>
@@ -51,29 +51,29 @@ export default function Hero({ onExploreClick, onAppClick }: HeroProps) {
               className="group inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-[#171717] text-white text-[14px] font-medium shadow-xs hover:bg-black/90 active:scale-[0.98] transition-all cursor-pointer"
             >
               <span>Explore content</span>
-              <ArrowRight className="w-4 h-4 text-[#FF713F] group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 text-accent-orange group-hover:translate-x-1 transition-transform" />
             </button>
 
             <button
               onClick={() => (onAppClick ? onAppClick() : scrollTo('mobile-app'))}
               className="inline-flex items-center gap-2 px-5 py-3.5 rounded-full bg-transparent hover:bg-black/5 text-[#171717] text-[14px] font-medium border border-black/15 active:scale-[0.98] transition-all cursor-pointer"
             >
-              <Smartphone className="w-4 h-4 text-[#55554F]" />
+              <Smartphone className="w-4 h-4 text-secondary" />
               <span>Get the mobile app</span>
             </button>
           </div>
 
           {/* Understated Mobile App Announcement */}
-          <div className="inline-flex items-center gap-2.5 pt-2 text-[12px] text-[#55554F]">
+          <div className="inline-flex items-center gap-2.5 pt-2 text-[12px] text-secondary">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF713F] opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#FF713F]" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-orange opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent-orange" />
             </span>
             <span>Mobile application currently in development</span>
           </div>
 
           {/* Quick Pillars pill bar */}
-          <div className="mt-8 pt-6 border-t border-black/8 grid grid-cols-3 gap-2 text-[11px] text-[#55554F]">
+          <div className="mt-8 pt-6 border-t border-black/8 grid grid-cols-3 gap-2 text-[11px] text-secondary">
             <div className="flex flex-col">
               <span className="font-semibold text-[#171717]">Audio & Video</span>
               <span>Rich Media formats</span>

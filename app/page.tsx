@@ -14,7 +14,6 @@ import Footer from '../components/Footer';
 import ContentModal from '../components/ContentModal';
 import GlobalPlayer from '../components/GlobalPlayer';
 import { Teaching, CategoryId } from '../types/content';
-import { TEACHINGS } from '../data/contentData';
 
 export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState<CategoryId | 'all'>('all');
@@ -50,7 +49,7 @@ export default function HomePage() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col bg-[#DADAD4] text-[#171717] selection:bg-[#FF713F]/20 selection:text-[#171717]">
+    <main className="min-h-screen flex flex-col bg-canvas text-[#171717] selection:bg-accent-orange/20 selection:text-[#171717]">
       {/* Top Floating Pill Navigation */}
       <Navbar onSearchClick={handleSearchFocus} />
 
@@ -101,6 +100,7 @@ export default function HomePage() {
 
       {/* Persistent Floating Bottom Audio/Video Bar */}
       <GlobalPlayer
+        key={currentPlayingTrack?.id || 'none'}
         currentTrack={currentPlayingTrack}
         isPlaying={isPlaying}
         onTogglePlay={handleTogglePlay}

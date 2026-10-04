@@ -11,11 +11,11 @@ interface ContentCategoriesProps {
 }
 
 const iconMap: Record<string, React.ReactNode> = {
-  Sparkles: <Sparkles className="w-5 h-5 text-[#FF713F]" />,
+  Sparkles: <Sparkles className="w-5 h-5 text-accent-orange" />,
   BookOpen: <BookOpen className="w-5 h-5 text-[#171717]" />,
   GraduationCap: <GraduationCap className="w-5 h-5 text-[#171717]" />,
-  Volume2: <Volume2 className="w-5 h-5 text-[#D6A82E]" />,
-  Compass: <Compass className="w-5 h-5 text-[#FF713F]" />,
+  Volume2: <Volume2 className="w-5 h-5 text-accent-gold" />,
+  Compass: <Compass className="w-5 h-5 text-accent-orange" />,
 };
 
 export default function ContentCategories({
@@ -42,13 +42,13 @@ export default function ContentCategories({
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 sm:mb-16 gap-6">
           <div className="max-w-xl">
-            <span className="text-[11px] font-semibold tracking-widest uppercase text-[#55554F] mb-3 block">
+            <span className="text-[11px] font-semibold tracking-widest uppercase text-secondary mb-3 block">
               Content Directory
             </span>
             <h2 className="font-serif-heading text-3xl sm:text-4xl md:text-5xl font-normal text-[#171717] tracking-tight mb-4">
               Explore the words that inspire.
             </h2>
-            <p className="text-[15px] sm:text-[16px] text-[#55554F] leading-relaxed">
+            <p className="text-[15px] sm:text-[16px] text-secondary leading-relaxed">
               Listen, watch, and learn from Islamic teachings shared by voices across Malawi.
             </p>
           </div>
@@ -62,7 +62,7 @@ export default function ContentCategories({
               className={`px-4 py-2 rounded-full text-xs font-medium transition-all cursor-pointer ${
                 selectedCategory === 'all'
                   ? 'bg-[#171717] text-white shadow-xs'
-                  : 'bg-[#F1F1EC] text-[#55554F] hover:text-[#171717] border border-black/8'
+                  : 'bg-surface text-secondary hover:text-[#171717] border border-black/8'
               }`}
             >
               View all 5 categories
@@ -79,7 +79,7 @@ export default function ContentCategories({
               <div
                 key={cat.id}
                 onClick={() => handleCategoryClick(cat.id)}
-                className={`group relative p-6 sm:p-7 rounded-2xl bg-[#F1F1EC] border transition-all duration-300 cursor-pointer flex flex-col justify-between ${
+                className={`group relative p-6 sm:p-7 rounded-2xl bg-surface border transition-all duration-300 cursor-pointer flex flex-col justify-between ${
                   isSelected
                     ? 'border-[#171717] shadow-sm bg-[#EAEAE4]'
                     : 'border-black/8 hover:border-black/20 hover:-translate-y-1'
@@ -91,7 +91,7 @@ export default function ContentCategories({
                     <div className="w-10 h-10 rounded-xl bg-black/5 flex items-center justify-center group-hover:scale-105 transition-transform">
                       {iconMap[cat.iconName] || <Sparkles className="w-5 h-5" />}
                     </div>
-                    <span className="text-[11px] font-medium text-[#55554F] bg-black/4 px-2.5 py-1 rounded-full border border-black/5">
+                    <span className="text-[11px] font-medium text-secondary bg-black/4 px-2.5 py-1 rounded-full border border-black/5">
                       {cat.itemCount} recordings
                     </span>
                   </div>
@@ -102,21 +102,21 @@ export default function ContentCategories({
                       <span>{cat.title}</span>
                     </h3>
                     {cat.vernacularTitle && (
-                      <span className="text-[12px] font-sans text-[#55554F]/80 italic">
+                      <span className="text-[12px] font-sans text-secondary/80 italic">
                         {cat.vernacularTitle}
                       </span>
                     )}
                   </div>
 
                   {/* Description */}
-                  <p className="text-[13px] text-[#55554F] leading-relaxed mb-6">
+                  <p className="text-[13px] text-secondary leading-relaxed mb-6">
                     {cat.description}
                   </p>
                 </div>
 
                 {/* Bottom link indicator */}
                 <div className="pt-4 border-t border-black/6 flex items-center justify-between text-xs font-medium text-[#171717]">
-                  <span className="group-hover:text-[#FF713F] transition-colors">
+                  <span className="group-hover:text-accent-orange transition-colors">
                     Explore recordings
                   </span>
                   <div className="w-6 h-6 rounded-full bg-black/5 group-hover:bg-[#171717] group-hover:text-white flex items-center justify-center transition-all">
@@ -128,10 +128,10 @@ export default function ContentCategories({
           })}
 
           {/* 6th Card: Cross-Format Knowledge Platform Banner */}
-          <div className="p-6 sm:p-7 rounded-2xl bg-gradient-to-br from-[#171717] to-[#252525] text-white flex flex-col justify-between border border-black/10">
+          <div className="p-6 sm:p-7 rounded-2xl bg-linear-to-br from-[#171717] to-[#252525] text-white flex flex-col justify-between border border-black/10">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-[10px] uppercase font-semibold tracking-wider text-[#D6A82E] mb-6">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#FF713F]" />
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-[10px] uppercase font-semibold tracking-wider text-accent-gold mb-6">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-orange" />
                 Dual Media Archive
               </div>
               <h3 className="font-serif-heading text-2xl font-normal text-white mb-2">
@@ -144,7 +144,7 @@ export default function ContentCategories({
             </div>
             <div className="pt-4 border-t border-white/10 flex items-center justify-between text-xs font-medium text-white/80">
               <span>Fast streaming across Malawi</span>
-              <span className="text-[#FF713F]">Optimized</span>
+              <span className="text-accent-orange">Optimized</span>
             </div>
           </div>
         </div>

@@ -40,12 +40,12 @@ export default function Navbar({ onSearchClick, onAppClick }: NavbarProps) {
           <nav
             className={`flex items-center justify-between px-4 sm:px-6 py-2.5 sm:py-3 rounded-full transition-all duration-300 ${
               isScrolled
-                ? 'bg-[#F1F1EC]/90 backdrop-blur-md shadow-xs border border-black/8'
-                : 'bg-[#F1F1EC] border border-black/6 shadow-xs'
+                ? 'bg-surface/90 backdrop-blur-md shadow-xs border border-black/8'
+                : 'bg-surface border border-black/6 shadow-xs'
             }`}
           >
             {/* Left navigation (Desktop) */}
-            <div className="hidden md:flex items-center gap-6 lg:gap-8 text-[13px] font-medium text-[#55554F]">
+            <div className="hidden md:flex items-center gap-6 lg:gap-8 text-[13px] font-medium text-secondary">
               <button
                 onClick={() => scrollTo('explore-content')}
                 className="hover:text-[#171717] transition-colors cursor-pointer"
@@ -75,7 +75,7 @@ export default function Navbar({ onSearchClick, onAppClick }: NavbarProps) {
                 className="hover:text-[#171717] transition-colors cursor-pointer flex items-center gap-1"
               >
                 <span>Malawi</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-[#D6A82E]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-gold" />
               </button>
             </div>
 
@@ -94,7 +94,7 @@ export default function Navbar({ onSearchClick, onAppClick }: NavbarProps) {
               {onSearchClick && (
                 <button
                   onClick={onSearchClick}
-                  className="p-2 rounded-full text-[#55554F] hover:text-[#171717] hover:bg-black/5 transition-colors cursor-pointer"
+                  className="p-2 rounded-full text-secondary hover:text-[#171717] hover:bg-black/5 transition-colors cursor-pointer"
                   title="Search teachings"
                   aria-label="Search teachings"
                 >
@@ -112,10 +112,10 @@ export default function Navbar({ onSearchClick, onAppClick }: NavbarProps) {
                 }}
                 className="group relative inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px] font-medium text-[#171717] bg-black/5 hover:bg-black/10 border border-black/8 transition-all cursor-pointer"
               >
-                <Smartphone className="w-3.5 h-3.5 text-[#55554F] group-hover:text-[#171717] transition-colors" />
+                <Smartphone className="w-3.5 h-3.5 text-secondary group-hover:text-[#171717] transition-colors" />
                 <span>Get the app</span>
-                <span className="inline-flex items-center gap-1 text-[10px] text-[#FF713F] font-semibold bg-[#FF713F]/10 px-1.5 py-0.5 rounded-full">
-                  <span className="w-1 h-1 rounded-full bg-[#FF713F] animate-pulse" />
+                <span className="inline-flex items-center gap-1 text-[10px] text-accent-orange font-semibold bg-accent-orange/10 px-1.5 py-0.5 rounded-full">
+                  <span className="w-1 h-1 rounded-full bg-accent-orange animate-pulse" />
                   Soon
                 </span>
               </button>
@@ -127,7 +127,7 @@ export default function Navbar({ onSearchClick, onAppClick }: NavbarProps) {
                 onClick={() => scrollTo('mobile-app')}
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium text-[#171717] bg-black/5 border border-black/8"
               >
-                <Smartphone className="w-3 h-3 text-[#FF713F]" />
+                <Smartphone className="w-3 h-3 text-accent-orange" />
                 <span>App</span>
               </button>
               <button
@@ -144,9 +144,9 @@ export default function Navbar({ onSearchClick, onAppClick }: NavbarProps) {
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-30 md:hidden bg-[#DADAD4]/95 backdrop-blur-md pt-24 px-6 pb-10 flex flex-col justify-between animate-fadeIn">
+        <div className="fixed inset-0 z-30 md:hidden bg-canvas/95 backdrop-blur-md pt-24 px-6 pb-10 flex flex-col justify-between animate-fadeIn">
           <div className="space-y-6">
-            <p className="text-[11px] tracking-widest uppercase text-[#55554F] font-semibold">
+            <p className="text-[11px] tracking-widest uppercase text-secondary font-semibold">
               Explore Islamic Platform
             </p>
             <div className="flex flex-col space-y-4 text-xl font-serif-heading font-medium text-[#171717]">
@@ -155,28 +155,28 @@ export default function Navbar({ onSearchClick, onAppClick }: NavbarProps) {
                 className="text-left py-2 border-b border-black/5 flex items-center justify-between"
               >
                 <span>Explore Content</span>
-                <Sparkles className="w-4 h-4 text-[#FF713F]" />
+                <Sparkles className="w-4 h-4 text-accent-orange" />
               </button>
               <button
                 onClick={() => scrollTo('categories')}
                 className="text-left py-2 border-b border-black/5 flex items-center justify-between"
               >
                 <span>Categories</span>
-                <span className="text-xs font-sans text-[#55554F]">5 sections</span>
+                <span className="text-xs font-sans text-secondary">5 sections</span>
               </button>
               <button
                 onClick={() => scrollTo('media-experience')}
                 className="text-left py-2 border-b border-black/5 flex items-center justify-between"
               >
                 <span>Audio & Video Experience</span>
-                <span className="text-xs font-sans text-[#55554F]">Listen / Watch</span>
+                <span className="text-xs font-sans text-secondary">Listen / Watch</span>
               </button>
               <button
                 onClick={() => scrollTo('community')}
                 className="text-left py-2 border-b border-black/5 flex items-center justify-between"
               >
                 <span>Malawi Community Hub</span>
-                <Compass className="w-4 h-4 text-[#D6A82E]" />
+                <Compass className="w-4 h-4 text-accent-gold" />
               </button>
               <button
                 onClick={() => scrollTo('about')}
@@ -192,10 +192,10 @@ export default function Navbar({ onSearchClick, onAppClick }: NavbarProps) {
               onClick={() => scrollTo('mobile-app')}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-[#171717] text-white text-sm font-medium"
             >
-              <Smartphone className="w-4 h-4 text-[#FF713F]" />
+              <Smartphone className="w-4 h-4 text-accent-orange" />
               <span>Mobile App (In Development)</span>
             </button>
-            <p className="text-center text-[12px] text-[#55554F]">
+            <p className="text-center text-[12px] text-secondary">
               Khutbah Media • Accessible Islamic Knowledge for Malawi
             </p>
           </div>

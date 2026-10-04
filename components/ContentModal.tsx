@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   X,
   Play,
@@ -11,7 +11,6 @@ import {
   Sparkles,
   Share2,
   Check,
-  BookOpen,
 } from 'lucide-react';
 import { Teaching } from '../types/content';
 
@@ -28,7 +27,7 @@ export default function ContentModal({
   onPlay,
   isPlaying,
 }: ContentModalProps) {
-  const [copied, setCopied] = React.useState(false);
+  const [copied, setCopied] = useState(false);
 
   if (!teaching) return null;
 
@@ -43,7 +42,7 @@ export default function ContentModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-xs animate-fadeIn">
       <div
-        className="relative w-full max-w-2xl bg-[#F1F1EC] rounded-3xl border border-black/10 shadow-2xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto"
+        className="relative w-full max-w-2xl bg-surface rounded-3xl border border-black/10 shadow-2xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -61,22 +60,22 @@ export default function ContentModal({
             className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
               teaching.mediaType === 'audio'
                 ? 'bg-[#171717] text-white'
-                : 'bg-[#FF713F]/15 text-[#171717] border border-[#FF713F]/30'
+                : 'bg-accent-orange/15 text-[#171717] border border-accent-orange/30'
             }`}
           >
             {teaching.mediaType === 'audio' ? (
-              <Volume2 className="w-3.5 h-3.5 text-[#D6A82E]" />
+              <Volume2 className="w-3.5 h-3.5 text-accent-gold" />
             ) : (
-              <Video className="w-3.5 h-3.5 text-[#FF713F]" />
+              <Video className="w-3.5 h-3.5 text-accent-orange" />
             )}
             <span className="capitalize">{teaching.mediaType} Recording</span>
           </span>
 
-          <span className="text-xs font-medium text-[#55554F] bg-black/5 px-2.5 py-1 rounded-full">
+          <span className="text-xs font-medium text-secondary bg-black/5 px-2.5 py-1 rounded-full">
             {teaching.categoryLabel}
           </span>
 
-          <span className="text-xs text-[#55554F] flex items-center gap-1">
+          <span className="text-xs text-secondary flex items-center gap-1">
             <Clock className="w-3.5 h-3.5" />
             {teaching.duration}
           </span>
@@ -88,13 +87,13 @@ export default function ContentModal({
         </h2>
 
         {/* Speaker & Masjid info */}
-        <div className="flex flex-wrap items-center gap-y-1 gap-x-3 text-xs text-[#55554F] mb-6 pb-4 border-b border-black/8">
+        <div className="flex flex-wrap items-center gap-y-1 gap-x-3 text-xs text-secondary mb-6 pb-4 border-b border-black/8">
           <span className="font-semibold text-[#171717]">{teaching.speaker}</span>
           <span>•</span>
           <span>{teaching.speakerTitle}</span>
           <span>•</span>
           <span className="inline-flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5 text-[#55554F]" />
+            <MapPin className="w-3.5 h-3.5 text-secondary" />
             {teaching.location} ({teaching.district})
           </span>
           <span>•</span>
@@ -103,7 +102,7 @@ export default function ContentModal({
 
         {/* Description */}
         <div className="mb-6">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-[#55554F] mb-2">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-secondary mb-2">
             Overview
           </h4>
           <p className="text-xs sm:text-sm text-[#171717]/90 leading-relaxed">
@@ -115,12 +114,12 @@ export default function ContentModal({
         {teaching.keyTakeaways && teaching.keyTakeaways.length > 0 && (
           <div className="mb-8 p-4 rounded-2xl bg-[#E8E8E1] border border-black/5">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-[#171717] mb-3 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#FF713F]" />
+              <Sparkles className="w-3.5 h-3.5 text-accent-orange" />
               <span>Core Teachings & Points</span>
             </h4>
             <ul className="space-y-2">
               {teaching.keyTakeaways.map((point, idx) => (
-                <li key={idx} className="flex items-start gap-2.5 text-xs text-[#55554F]">
+                <li key={idx} className="flex items-start gap-2.5 text-xs text-secondary">
                   <span className="w-4 h-4 rounded-full bg-[#171717] text-white flex items-center justify-center text-[10px] shrink-0 mt-0.5">
                     ✓
                   </span>

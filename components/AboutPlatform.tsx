@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { BookOpen, Radio, Heart, Sparkles, ShieldCheck, Users } from 'lucide-react';
+import { BookOpen, Radio, Heart, ShieldCheck, Users } from 'lucide-react';
 
 export default function AboutPlatform() {
   const pillars = [
@@ -9,13 +9,13 @@ export default function AboutPlatform() {
       title: 'Free & Open Discovery',
       description:
         'Knowledge should have no paywalls or barriers. Every khutbah, reminder, and lecture is freely accessible to every seeker.',
-      icon: <BookOpen className="w-5 h-5 text-[#FF713F]" />,
+      icon: <BookOpen className="w-5 h-5 text-accent-orange" />,
     },
     {
       title: 'Preserving Malawian Heritage',
       description:
         'Archiving recordings from respected Malawian scholars, imams, and community teachers for future generations.',
-      icon: <Radio className="w-5 h-5 text-[#D6A82E]" />,
+      icon: <Radio className="w-5 h-5 text-accent-gold" />,
     },
     {
       title: 'Chichewa & English Context',
@@ -27,7 +27,7 @@ export default function AboutPlatform() {
       title: 'Pure Spiritual Focus',
       description:
         'Uncluttered, calm editorial design built specifically for reflection, study, and spiritual enrichment.',
-      icon: <Heart className="w-5 h-5 text-[#FF713F]" />,
+      icon: <Heart className="w-5 h-5 text-accent-orange" />,
     },
   ];
 
@@ -36,14 +36,14 @@ export default function AboutPlatform() {
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
         <div className="max-w-3xl mb-16 sm:mb-20">
-          <span className="text-[11px] font-semibold tracking-widest uppercase text-[#55554F] mb-3 block">
+          <span className="text-[11px] font-semibold tracking-widest uppercase text-secondary mb-3 block">
             Our Purpose & Mission
           </span>
           <h2 className="font-serif-heading text-3xl sm:text-4xl md:text-5xl font-normal text-[#171717] tracking-tight mb-6 leading-[1.15]">
             Making Islamic knowledge <br className="hidden sm:inline" />
             more accessible.
           </h2>
-          <p className="text-[16px] sm:text-[18px] text-[#55554F] leading-[1.65] font-sans">
+          <p className="text-[16px] sm:text-[18px] text-secondary leading-[1.65] font-sans">
             We believe access to beneficial Islamic knowledge should be simple. Our platform brings
             preachings, khutbahs, Quran recitations, and educational teachings together in one place,
             helping Muslims across Malawi stay connected to faith, learning, and community.
@@ -55,7 +55,7 @@ export default function AboutPlatform() {
           {pillars.map((pillar, idx) => (
             <div
               key={idx}
-              className="p-6 sm:p-7 rounded-2xl bg-[#F1F1EC] border border-black/8 flex flex-col justify-between hover:border-black/20 transition-all"
+              className="p-6 sm:p-7 rounded-2xl bg-surface border border-black/8 flex flex-col justify-between hover:border-black/20 transition-all"
             >
               <div>
                 <div className="w-10 h-10 rounded-xl bg-black/5 flex items-center justify-center mb-6">
@@ -64,12 +64,12 @@ export default function AboutPlatform() {
                 <h3 className="font-serif-heading text-xl text-[#171717] font-medium mb-2.5">
                   {pillar.title}
                 </h3>
-                <p className="text-xs sm:text-[13px] text-[#55554F] leading-relaxed">
+                <p className="text-xs sm:text-[13px] text-secondary leading-relaxed">
                   {pillar.description}
                 </p>
               </div>
 
-              <div className="pt-6 mt-6 border-t border-black/6 flex items-center gap-1.5 text-[11px] text-[#55554F] font-mono">
+              <div className="pt-6 mt-6 border-t border-black/6 flex items-center gap-1.5 text-[11px] text-secondary font-mono">
                 <span>Pillar 0{idx + 1}</span>
               </div>
             </div>
@@ -82,13 +82,13 @@ export default function AboutPlatform() {
             <h4 className="font-serif-heading text-2xl text-[#171717]">
               Built for sincere learning, not commercial distraction.
             </h4>
-            <p className="text-xs sm:text-sm text-[#55554F]">
+            <p className="text-xs sm:text-sm text-secondary">
               Khutbah operates as a digital sanctuary designed to empower Islamic education across all
               districts of Malawi.
             </p>
           </div>
           <div className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#171717] text-white text-xs font-medium shrink-0">
-            <ShieldCheck className="w-4 h-4 text-[#D6A82E]" />
+            <ShieldCheck className="w-4 h-4 text-accent-gold" />
             <span>100% Free & Independent Media</span>
           </div>
         </div>

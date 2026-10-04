@@ -9,11 +9,8 @@ import {
   RotateCcw,
   RotateCw,
   Video,
-  Radio,
-  SlidersHorizontal,
   Headphones,
   Maximize2,
-  Sparkles,
 } from 'lucide-react';
 import { Teaching } from '../types/content';
 
@@ -31,7 +28,6 @@ export default function MediaExperience({ onPlayTeaching }: MediaExperienceProps
 
   // Interactive Video state
   const [isPlayingVideo, setIsPlayingVideo] = useState(false);
-  const [videoHovered, setVideoHovered] = useState(false);
 
   // Audio simulation timer when playing
   useEffect(() => {
@@ -107,13 +103,13 @@ export default function MediaExperience({ onPlayTeaching }: MediaExperienceProps
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <span className="text-[11px] font-semibold tracking-widest uppercase text-[#55554F] mb-3 block">
+          <span className="text-[11px] font-semibold tracking-widest uppercase text-secondary mb-3 block">
             Seamless Media Engine
           </span>
           <h2 className="font-serif-heading text-3xl sm:text-4xl md:text-5xl font-normal text-[#171717] tracking-tight mb-4">
             Listen your way. Watch your way.
           </h2>
-          <p className="text-[15px] sm:text-[16px] text-[#55554F] leading-relaxed">
+          <p className="text-[15px] sm:text-[16px] text-secondary leading-relaxed">
             Whether you prefer listening on the go or watching full lectures, discover Islamic
             knowledge in the format that works for you.
           </p>
@@ -122,32 +118,32 @@ export default function MediaExperience({ onPlayTeaching }: MediaExperienceProps
         {/* Split Editorial Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
           {/* LEFT: Audio Experience Card */}
-          <div className="rounded-3xl bg-[#F1F1EC] border border-black/8 p-6 sm:p-8 flex flex-col justify-between shadow-xs">
+          <div className="rounded-3xl bg-surface border border-black/8 p-6 sm:p-8 flex flex-col justify-between shadow-xs">
             <div>
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/5 text-[11px] font-medium text-[#171717]">
-                  <Headphones className="w-3.5 h-3.5 text-[#D6A82E]" />
+                  <Headphones className="w-3.5 h-3.5 text-accent-gold" />
                   <span>Audio Streaming Experience</span>
                 </div>
-                <span className="text-[11px] text-[#55554F] font-mono">256kbps Clean Audio</span>
+                <span className="text-[11px] text-secondary font-mono">256kbps Clean Audio</span>
               </div>
 
               {/* Title & Metadata */}
               <div className="mb-6">
-                <span className="text-[11px] uppercase tracking-wider font-semibold text-[#FF713F] block mb-1">
+                <span className="text-[11px] uppercase tracking-wider font-semibold text-accent-orange block mb-1">
                   Friday Khutbah
                 </span>
                 <h3 className="font-serif-heading text-2xl sm:text-3xl text-[#171717] font-medium mb-1">
                   The Importance of Salah
                 </h3>
-                <p className="text-xs text-[#55554F]">
+                <p className="text-xs text-secondary">
                   Sheikh Yusuf Banda • Central Mosque, Blantyre
                 </p>
               </div>
 
               {/* Waveform Visualizer simulation */}
-              <div className="bg-[#E7E7E1] rounded-2xl p-4 sm:p-5 mb-6 border border-black/5">
+              <div className="bg-surface-hover rounded-2xl p-4 sm:p-5 mb-6 border border-black/5">
                 <div className="flex items-end justify-between gap-1 h-12 mb-3 px-1">
                   {Array.from({ length: 36 }).map((_, i) => {
                     const isPassed = (i / 36) * 100 <= audioProgress;
@@ -184,7 +180,7 @@ export default function MediaExperience({ onPlayTeaching }: MediaExperienceProps
                 </div>
 
                 {/* Time indicators */}
-                <div className="flex justify-between text-[10px] font-mono text-[#55554F]">
+                <div className="flex justify-between text-[10px] font-mono text-secondary">
                   <span>
                     {Math.floor((audioProgress / 100) * 28)}:
                     {String(Math.floor(((audioProgress / 100) * 28 * 60) % 60)).padStart(2, '0')}
@@ -206,7 +202,7 @@ export default function MediaExperience({ onPlayTeaching }: MediaExperienceProps
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setAudioProgress((p) => Math.max(0, p - 5))}
-                    className="p-2 text-[#55554F] hover:text-[#171717] transition-colors cursor-pointer"
+                    className="p-2 text-secondary hover:text-[#171717] transition-colors cursor-pointer"
                     title="Rewind 15 seconds"
                   >
                     <RotateCcw className="w-4 h-4" />
@@ -231,7 +227,7 @@ export default function MediaExperience({ onPlayTeaching }: MediaExperienceProps
 
                   <button
                     onClick={() => setAudioProgress((p) => Math.min(100, p + 5))}
-                    className="p-2 text-[#55554F] hover:text-[#171717] transition-colors cursor-pointer"
+                    className="p-2 text-secondary hover:text-[#171717] transition-colors cursor-pointer"
                     title="Forward 15 seconds"
                   >
                     <RotateCw className="w-4 h-4" />
@@ -240,7 +236,7 @@ export default function MediaExperience({ onPlayTeaching }: MediaExperienceProps
 
                 <button
                   onClick={() => setIsMuted(!isMuted)}
-                  className="p-2 text-[#55554F] hover:text-[#171717] transition-colors cursor-pointer"
+                  className="p-2 text-secondary hover:text-[#171717] transition-colors cursor-pointer"
                   title={isMuted ? 'Unmute' : 'Mute'}
                 >
                   {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
@@ -249,7 +245,7 @@ export default function MediaExperience({ onPlayTeaching }: MediaExperienceProps
 
               {/* Chapters list preview */}
               <div className="pt-4 border-t border-black/8">
-                <span className="text-[11px] font-semibold text-[#55554F] uppercase tracking-wider block mb-2">
+                <span className="text-[11px] font-semibold text-secondary uppercase tracking-wider block mb-2">
                   Lecture Chapters
                 </span>
                 <div className="space-y-1.5">
@@ -264,11 +260,11 @@ export default function MediaExperience({ onPlayTeaching }: MediaExperienceProps
                       className={`flex items-center justify-between px-3 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
                         activeChapterIndex === idx
                           ? 'bg-black/8 text-[#171717] font-medium'
-                          : 'hover:bg-black/4 text-[#55554F]'
+                          : 'hover:bg-black/4 text-secondary'
                       }`}
                     >
                       <span className="truncate">{ch.title}</span>
-                      <span className="font-mono text-[11px] text-[#55554F]/70 ml-2">{ch.time}</span>
+                      <span className="font-mono text-[11px] text-secondary/70 ml-2">{ch.time}</span>
                     </div>
                   ))}
                 </div>
@@ -277,30 +273,26 @@ export default function MediaExperience({ onPlayTeaching }: MediaExperienceProps
           </div>
 
           {/* RIGHT: Video Experience Card */}
-          <div className="rounded-3xl bg-[#F1F1EC] border border-black/8 p-6 sm:p-8 flex flex-col justify-between shadow-xs">
+          <div className="rounded-3xl bg-surface border border-black/8 p-6 sm:p-8 flex flex-col justify-between shadow-xs">
             <div>
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/5 text-[11px] font-medium text-[#171717]">
-                  <Video className="w-3.5 h-3.5 text-[#FF713F]" />
+                  <Video className="w-3.5 h-3.5 text-accent-orange" />
                   <span>Video Lecture Experience</span>
                 </div>
-                <span className="text-[11px] text-[#55554F] font-mono">1080p HD Recording</span>
+                <span className="text-[11px] text-secondary font-mono">1080p HD Recording</span>
               </div>
 
               {/* Video Player Display Container */}
-              <div
-                onMouseEnter={() => setVideoHovered(true)}
-                onMouseLeave={() => setVideoHovered(false)}
-                className="relative aspect-video rounded-2xl bg-gradient-to-br from-[#1C1C1A] to-[#2B2B28] text-white overflow-hidden shadow-inner flex flex-col justify-between p-4 sm:p-5 mb-6 group"
-              >
+              <div className="relative aspect-video rounded-2xl bg-linear-to-br from-[#1C1C1A] to-[#2B2B28] text-white overflow-hidden shadow-inner flex flex-col justify-between p-4 sm:p-5 mb-6 group">
                 {/* Background decorative subtle graphic overlay */}
-                <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#DADAD4_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+                <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#DADAD4_1px,transparent_1px)] bg-size-[16px_16px] pointer-events-none" />
 
                 {/* Top badges inside video preview */}
                 <div className="relative z-10 flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] font-medium text-white border border-white/10">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF713F]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent-orange" />
                     Lilongwe Islamic Centre
                   </span>
                   <span className="text-[11px] font-mono bg-black/60 px-2 py-0.5 rounded text-white/80">
@@ -315,7 +307,7 @@ export default function MediaExperience({ onPlayTeaching }: MediaExperienceProps
                       setIsPlayingVideo(!isPlayingVideo);
                       onPlayTeaching(sampleVideoTeaching);
                     }}
-                    className="w-16 h-16 rounded-full bg-[#FF713F] hover:bg-[#FF713F]/90 text-white flex items-center justify-center shadow-lg transition-transform transform group-hover:scale-110 active:scale-95 cursor-pointer"
+                    className="w-16 h-16 rounded-full bg-accent-orange hover:bg-accent-orange/90 text-white flex items-center justify-center shadow-lg transition-transform transform group-hover:scale-110 active:scale-95 cursor-pointer"
                     aria-label="Play video lecture"
                   >
                     {isPlayingVideo ? (
@@ -344,13 +336,13 @@ export default function MediaExperience({ onPlayTeaching }: MediaExperienceProps
               {/* Video Features Grid */}
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <div className="p-3.5 rounded-xl bg-black/4 border border-black/5">
-                  <span className="text-[10px] uppercase font-semibold text-[#55554F] block mb-1">
+                  <span className="text-[10px] uppercase font-semibold text-secondary block mb-1">
                     Dual Subtitles
                   </span>
                   <p className="text-xs font-medium text-[#171717]">Chichewa & English Captions</p>
                 </div>
                 <div className="p-3.5 rounded-xl bg-black/4 border border-black/5">
-                  <span className="text-[10px] uppercase font-semibold text-[#55554F] block mb-1">
+                  <span className="text-[10px] uppercase font-semibold text-secondary block mb-1">
                     Bandwidth Optimized
                   </span>
                   <p className="text-xs font-medium text-[#171717]">Adaptive low-data streaming</p>
@@ -359,11 +351,11 @@ export default function MediaExperience({ onPlayTeaching }: MediaExperienceProps
             </div>
 
             {/* Bottom Note */}
-            <div className="pt-6 border-t border-black/8 flex items-center justify-between text-xs text-[#55554F]">
+            <div className="pt-6 border-t border-black/8 flex items-center justify-between text-xs text-secondary">
               <span>Watch anytime without registration</span>
               <button
                 onClick={() => onPlayTeaching(sampleVideoTeaching)}
-                className="text-[#171717] font-medium hover:text-[#FF713F] transition-colors cursor-pointer"
+                className="text-[#171717] font-medium hover:text-accent-orange transition-colors cursor-pointer"
               >
                 Launch player →
               </button>
