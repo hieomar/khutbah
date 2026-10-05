@@ -96,6 +96,10 @@ export async function getUserById(id: string): Promise<AdminUserData | null> {
     .from(schema.adminPermission)
     .where(eq(schema.adminPermission.userId, id));
 
+  const uniquePermissions = Array.from(
+    new Set(perms.map((p) => p.permissionId as PermissionId))
+  );
+
   return {
     id: userRow.id,
     name: userRow.name,
@@ -106,7 +110,7 @@ export async function getUserById(id: string): Promise<AdminUserData | null> {
     status: userRow.status as 'active' | 'suspended' | 'pending',
     createdAt: userRow.createdAt,
     updatedAt: userRow.updatedAt,
-    permissions: perms.map((p) => p.permissionId as PermissionId),
+    permissions: uniquePermissions,
   };
 }
 
@@ -124,6 +128,10 @@ export async function getUserByEmail(email: string): Promise<AdminUserData | nul
     .from(schema.adminPermission)
     .where(eq(schema.adminPermission.userId, userRow.id));
 
+  const uniquePermissions = Array.from(
+    new Set(perms.map((p) => p.permissionId as PermissionId))
+  );
+
   return {
     id: userRow.id,
     name: userRow.name,
@@ -134,7 +142,7 @@ export async function getUserByEmail(email: string): Promise<AdminUserData | nul
     status: userRow.status as 'active' | 'suspended' | 'pending',
     createdAt: userRow.createdAt,
     updatedAt: userRow.updatedAt,
-    permissions: perms.map((p) => p.permissionId as PermissionId),
+    permissions: uniquePermissions,
   };
 }
 
@@ -190,10 +198,10 @@ export async function listUsers(params?: {
           .where(inArray(schema.adminPermission.userId, userIds))
       : [];
 
-  const permsByUser = new Map<string, PermissionId[]>();
+  const permsByUser = new Map<string, Set<PermissionId>>();
   for (const row of allAdminPerms) {
-    const existing = permsByUser.get(row.userId) || [];
-    existing.push(row.permissionId as PermissionId);
+    const existing = permsByUser.get(row.userId) || new Set<PermissionId>();
+    existing.add(row.permissionId as PermissionId);
     permsByUser.set(row.userId, existing);
   }
 
@@ -207,7 +215,7 @@ export async function listUsers(params?: {
     status: u.status as 'active' | 'suspended' | 'pending',
     createdAt: u.createdAt,
     updatedAt: u.updatedAt,
-    permissions: permsByUser.get(u.id) || [],
+    permissions: Array.from(permsByUser.get(u.id) || []),
   }));
 
   return { users, total };

@@ -6,89 +6,7 @@ config({ path: ".env.local" });
 const { db } = await import("../lib/db");
 const { permission, adminPermission, user } = await import("../lib/db/schema");
 const { auth } = await import("../lib/auth/auth");
-
-const permissions = [
-  {
-    id: "users.create",
-    category: "User Management",
-    name: "Create users",
-    description: "Create new users.",
-  },
-  {
-    id: "users.read",
-    category: "User Management",
-    name: "View users",
-    description: "View user accounts.",
-  },
-  {
-    id: "users.update",
-    category: "User Management",
-    name: "Update users",
-    description: "Update user accounts.",
-  },
-  {
-    id: "users.delete",
-    category: "User Management",
-    name: "Delete users",
-    description: "Delete user accounts.",
-  },
-  {
-    id: "users.reset_password",
-    category: "User Management",
-    name: "Reset passwords",
-    description: "Reset user passwords.",
-  },
-  {
-    id: "users.invite",
-    category: "User Management",
-    name: "Invite users",
-    description: "Invite new users.",
-  },
-
-  {
-    id: "media.create",
-    category: "Media Management",
-    name: "Upload media",
-    description: "Upload new media.",
-  },
-  {
-    id: "media.read",
-    category: "Media Management",
-    name: "View media",
-    description: "View media.",
-  },
-  {
-    id: "media.update",
-    category: "Media Management",
-    name: "Update media",
-    description: "Update existing media.",
-  },
-  {
-    id: "media.delete",
-    category: "Media Management",
-    name: "Delete media",
-    description: "Delete media.",
-  },
-  {
-    id: "media.archive",
-    category: "Media Management",
-    name: "Archive media",
-    description: "Archive media.",
-  },
-
-  {
-    id: "admins.create",
-    category: "Administrator Management",
-    name: "Create administrators",
-    description: "Create administrator accounts.",
-  },
-  {
-    id: "admins.update_permissions",
-    category: "Administrator Management",
-    name: "Manage administrator permissions",
-    description: "Assign and revoke administrator permissions.",
-  },
-];
+const { PERMISSION_CATALOGUE } = await import("../lib/auth/permissions");
 
 const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL!;
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD!;
@@ -99,23 +17,23 @@ async function seed() {
 
   if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
     throw new Error(
-      "SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD must be defined"
+      "SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD must be defined in .env.local"
     );
   }
-
-  // --------------------------------------------------
-  // 1. Seed permissions
-  // --------------------------------------------------
-
-  console.log("Seeding permissions...");
 
   if (!db) {
     throw new Error("Database connection could not be established.");
   }
 
+  // --------------------------------------------------
+  // 1. Seed complete system permissions catalogue
+  // --------------------------------------------------
+
+  console.log(`Seeding ${PERMISSION_CATALOGUE.length} system permissions...`);
+
   await db
     .insert(permission)
-    .values(permissions)
+    .values(PERMISSION_CATALOGUE)
     .onConflictDoNothing();
 
   // --------------------------------------------------
@@ -125,7 +43,7 @@ async function seed() {
   let [admin] = await db
     .select()
     .from(user)
-    .where(eq(user.email, ADMIN_EMAIL))
+    .where(eq(user.email, ADMIN_EMAIL.trim().toLowerCase()))
     .limit(1);
 
   // --------------------------------------------------
@@ -138,7 +56,7 @@ async function seed() {
     const result = await auth.api.signUpEmail({
       body: {
         name: ADMIN_NAME,
-        email: ADMIN_EMAIL,
+        email: ADMIN_EMAIL.trim().toLowerCase(),
         password: ADMIN_PASSWORD,
       },
     });
@@ -152,7 +70,7 @@ async function seed() {
     [admin] = await db
       .select()
       .from(user)
-      .where(eq(user.email, ADMIN_EMAIL))
+      .where(eq(user.email, ADMIN_EMAIL.trim().toLowerCase()))
       .limit(1);
 
     if (!admin) {
@@ -163,7 +81,7 @@ async function seed() {
   }
 
   // --------------------------------------------------
-  // 4. Promote user to admin
+  // 4. Promote user to active administrator
   // --------------------------------------------------
 
   await db
@@ -177,8 +95,13 @@ async function seed() {
     .where(eq(user.id, admin.id));
 
   // --------------------------------------------------
-  // 5. Give admin all permissions
+  // 5. Grant administrator all system permissions
   // --------------------------------------------------
+
+  // Clean existing permissions to prevent duplicates
+  await db
+    .delete(adminPermission)
+    .where(eq(adminPermission.userId, admin.id));
 
   const permissionRows = await db
     .select()
@@ -192,12 +115,13 @@ async function seed() {
         userId: admin.id,
         permissionId: p.id,
         grantedBy: admin.id,
-      })
-      .onConflictDoNothing();
+        grantedAt: new Date(),
+      });
   }
 
-  console.log("✅ Database seed completed.");
-  console.log(`Admin: ${ADMIN_EMAIL}`);
+  console.log("✅ Database seed completed successfully.");
+  console.log(`Admin user: ${ADMIN_EMAIL}`);
+  console.log(`Granted permissions: ${permissionRows.length}`);
 }
 
 seed()
