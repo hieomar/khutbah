@@ -1,5 +1,6 @@
 import { PermissionId, ALL_PERMISSION_IDS } from '../auth/permissions';
 import { TEACHINGS } from '../../data/contentData';
+import { broadcastStatsUpdate, broadcastAuditLog } from '../events/admin-events';
 
 // Fallback in-memory data store for local development/preview when Neon DB connection is pending
 export interface AdminUserData {
@@ -312,6 +313,14 @@ export async function createUser(data: {
   };
 
   memoryUsers.unshift(newUser);
+  broadcastStatsUpdate({
+    totalUsers: memoryUsers.length,
+    totalAdmins: memoryUsers.filter((u) => u.role === 'admin').length,
+    totalListeners: memoryUsers.filter((u) => u.role === 'listener').length,
+    totalPublishedMedia: memoryMedia.filter((m) => m.status === 'published').length,
+    totalArchivedMedia: memoryMedia.filter((m) => m.status === 'archived').length,
+    totalDraftMedia: memoryMedia.filter((m) => m.status === 'draft').length,
+  });
   return newUser;
 }
 
@@ -337,6 +346,14 @@ export async function updateUser(
   }
 
   memoryUsers[userIdx] = updated;
+  broadcastStatsUpdate({
+    totalUsers: memoryUsers.length,
+    totalAdmins: memoryUsers.filter((u) => u.role === 'admin').length,
+    totalListeners: memoryUsers.filter((u) => u.role === 'listener').length,
+    totalPublishedMedia: memoryMedia.filter((m) => m.status === 'published').length,
+    totalArchivedMedia: memoryMedia.filter((m) => m.status === 'archived').length,
+    totalDraftMedia: memoryMedia.filter((m) => m.status === 'draft').length,
+  });
   return updated;
 }
 
@@ -442,6 +459,14 @@ export async function createMedia(data: Omit<MediaItemData, 'id' | 'createdAt' |
   };
 
   memoryMedia.unshift(newMedia);
+  broadcastStatsUpdate({
+    totalUsers: memoryUsers.length,
+    totalAdmins: memoryUsers.filter((u) => u.role === 'admin').length,
+    totalListeners: memoryUsers.filter((u) => u.role === 'listener').length,
+    totalPublishedMedia: memoryMedia.filter((m) => m.status === 'published').length,
+    totalArchivedMedia: memoryMedia.filter((m) => m.status === 'archived').length,
+    totalDraftMedia: memoryMedia.filter((m) => m.status === 'draft').length,
+  });
   return newMedia;
 }
 
@@ -473,6 +498,14 @@ export async function archiveMedia(id: string): Promise<MediaItemData> {
     archivedAt: new Date(),
     updatedAt: new Date(),
   };
+  broadcastStatsUpdate({
+    totalUsers: memoryUsers.length,
+    totalAdmins: memoryUsers.filter((u) => u.role === 'admin').length,
+    totalListeners: memoryUsers.filter((u) => u.role === 'listener').length,
+    totalPublishedMedia: memoryMedia.filter((m) => m.status === 'published').length,
+    totalArchivedMedia: memoryMedia.filter((m) => m.status === 'archived').length,
+    totalDraftMedia: memoryMedia.filter((m) => m.status === 'draft').length,
+  });
   return memoryMedia[idx];
 }
 
@@ -486,6 +519,14 @@ export async function restoreMedia(id: string): Promise<MediaItemData> {
     archivedAt: null,
     updatedAt: new Date(),
   };
+  broadcastStatsUpdate({
+    totalUsers: memoryUsers.length,
+    totalAdmins: memoryUsers.filter((u) => u.role === 'admin').length,
+    totalListeners: memoryUsers.filter((u) => u.role === 'listener').length,
+    totalPublishedMedia: memoryMedia.filter((m) => m.status === 'published').length,
+    totalArchivedMedia: memoryMedia.filter((m) => m.status === 'archived').length,
+    totalDraftMedia: memoryMedia.filter((m) => m.status === 'draft').length,
+  });
   return memoryMedia[idx];
 }
 
@@ -493,6 +534,14 @@ export async function deleteMedia(id: string): Promise<void> {
   const idx = memoryMedia.findIndex((m) => m.id === id);
   if (idx === -1) throw new Error('Media item not found');
   memoryMedia.splice(idx, 1);
+  broadcastStatsUpdate({
+    totalUsers: memoryUsers.length,
+    totalAdmins: memoryUsers.filter((u) => u.role === 'admin').length,
+    totalListeners: memoryUsers.filter((u) => u.role === 'listener').length,
+    totalPublishedMedia: memoryMedia.filter((m) => m.status === 'published').length,
+    totalArchivedMedia: memoryMedia.filter((m) => m.status === 'archived').length,
+    totalDraftMedia: memoryMedia.filter((m) => m.status === 'draft').length,
+  });
 }
 
 // Invitation Data Operations
@@ -568,6 +617,15 @@ export async function createAuditLog(entry: Omit<AuditLogData, 'id' | 'createdAt
     createdAt: new Date(),
   };
   memoryAuditLogs.unshift(newLog);
+  broadcastAuditLog(newLog);
+  broadcastStatsUpdate({
+    totalUsers: memoryUsers.length,
+    totalAdmins: memoryUsers.filter((u) => u.role === 'admin').length,
+    totalListeners: memoryUsers.filter((u) => u.role === 'listener').length,
+    totalPublishedMedia: memoryMedia.filter((m) => m.status === 'published').length,
+    totalArchivedMedia: memoryMedia.filter((m) => m.status === 'archived').length,
+    totalDraftMedia: memoryMedia.filter((m) => m.status === 'draft').length,
+  });
   return newLog;
 }
 

@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { requirePermission } from '../../lib/auth/session';
+import { requirePermission, requireAdmin } from '../../lib/auth/session';
 import {
   createUser,
   updateUser,
@@ -18,7 +18,7 @@ import {
   getUserById,
   getMediaById,
 } from '../../lib/db/store';
-import { recordAuditEvent } from '../../lib/audit';
+import { recordAuditEvent, AuditActionType } from '../../lib/audit';
 import { PermissionId } from '../../lib/auth/permissions';
 import { StorageService } from '../../lib/storage';
 
@@ -492,5 +492,57 @@ export async function deleteMediaAction(mediaId: string) {
     return { success: true };
   } catch (error: unknown) {
     return { success: false, error: getErrorMessage(error, 'Failed to delete media') };
+  }
+}
+
+export async function triggerLiveAuditSimulationAction() {
+  try {
+    const admin = await requireAdmin();
+    const sampleEvents: {
+      action: AuditActionType;
+      summary: string;
+      type: 'user' | 'admin' | 'media' | 'invitation';
+      details: Record<string, unknown>;
+    }[] = [
+      {
+        action: 'media.created',
+        summary: `Published Khutbah "Tawheed and Its Fruits in Daily Life" (Lilongwe)`,
+        type: 'media',
+        details: { mediaType: 'audio', district: 'Lilongwe', language: 'Chichewa' },
+      },
+      {
+        action: 'admin.permissions_updated',
+        summary: `Assigned media management permissions to Regional Editor`,
+        type: 'admin',
+        details: { granted: ['media.create', 'media.update'] },
+      },
+      {
+        action: 'user.invited',
+        summary: `Invited regional coordinator (zomba.daawah@khutbah.mw)`,
+        type: 'invitation',
+        details: { role: 'admin', status: 'pending' },
+      },
+      {
+        action: 'user.created',
+        summary: `New listener account registered via mobile portal`,
+        type: 'user',
+        details: { role: 'listener', district: 'Blantyre' },
+      },
+    ];
+
+    const randomEvent = sampleEvents[Math.floor(Math.random() * sampleEvents.length)];
+
+    const log = await recordAuditEvent({
+      actor: admin,
+      action: randomEvent.action,
+      targetType: randomEvent.type,
+      targetId: `sim-${Date.now()}`,
+      targetSummary: randomEvent.summary,
+      details: randomEvent.details,
+    });
+
+    return { success: true, log };
+  } catch (error: unknown) {
+    return { success: false, error: getErrorMessage(error, 'Failed to simulate live event') };
   }
 }
