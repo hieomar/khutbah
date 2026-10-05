@@ -1,8 +1,9 @@
+import { eq, desc, and, or, ilike, inArray, count } from 'drizzle-orm';
+import { db } from './index';
+import * as schema from './schema';
 import { PermissionId, ALL_PERMISSION_IDS } from '../auth/permissions';
-import { TEACHINGS } from '../../data/contentData';
 import { broadcastStatsUpdate, broadcastAuditLog } from '../events/admin-events';
 
-// Fallback in-memory data store for local development/preview when Neon DB connection is pending
 export interface AdminUserData {
   id: string;
   name: string;
@@ -77,213 +78,144 @@ export interface AuditLogData {
   createdAt: Date;
 }
 
-// Memory Store initialized with seed data
-const memoryUsers: AdminUserData[] = [
-  {
-    id: 'user-super-admin',
-    name: 'Sheikh Yusuf Banda',
-    email: 'admin@khutbah.mw',
-    emailVerified: true,
-    image: null,
-    role: 'admin',
-    status: 'active',
-    createdAt: new Date('2026-08-01T10:00:00Z'),
-    updatedAt: new Date('2026-08-01T10:00:00Z'),
-    permissions: [...ALL_PERMISSION_IDS], // Full super-admin permissions
-  },
-  {
-    id: 'user-media-editor',
-    name: 'Ustadh Ibrahim Mataka',
-    email: 'editor@khutbah.mw',
-    emailVerified: true,
-    image: null,
-    role: 'admin',
-    status: 'active',
-    createdAt: new Date('2026-08-15T12:00:00Z'),
-    updatedAt: new Date('2026-08-15T12:00:00Z'),
-    permissions: [
-      'media.view',
-      'media.create',
-      'media.update',
-      'media.archive',
-      'users.view',
-    ], // Media-focused admin
-  },
-  {
-    id: 'user-listener-1',
-    name: 'Bilal Phiri',
-    email: 'bilal.phiri@blantyre.mw',
-    emailVerified: true,
-    image: null,
-    role: 'listener',
-    status: 'active',
-    createdAt: new Date('2026-09-01T08:30:00Z'),
-    updatedAt: new Date('2026-09-01T08:30:00Z'),
-    permissions: [],
-  },
-  {
-    id: 'user-listener-2',
-    name: 'Amina Chirwa',
-    email: 'amina.chirwa@mzuzu.mw',
-    emailVerified: true,
-    image: null,
-    role: 'listener',
-    status: 'active',
-    createdAt: new Date('2026-09-10T14:20:00Z'),
-    updatedAt: new Date('2026-09-10T14:20:00Z'),
-    permissions: [],
-  },
-];
-
-const memoryMedia: MediaItemData[] = TEACHINGS.map((t, idx) => ({
-  id: t.id,
-  title: t.title,
-  description: t.description,
-  speaker: t.speaker,
-  speakerTitle: t.speakerTitle,
-  categoryId: t.categoryId,
-  categoryLabel: t.categoryLabel,
-  mediaType: t.mediaType,
-  duration: t.duration,
-  durationSeconds: t.durationSeconds,
-  storageKey: `media/${t.mediaType}s/${t.id}.${t.mediaType === 'audio' ? 'mp3' : 'mp4'}`,
-  storageUrl: `https://storage.khutbah.mw/media/${t.id}`,
-  thumbnailKey: `thumbnails/${t.id}.webp`,
-  thumbnailUrl: `https://storage.khutbah.mw/thumbnails/${t.id}.webp`,
-  fileSize: (idx + 1) * 1024 * 1024 * 12,
-  mimeType: t.mediaType === 'audio' ? 'audio/mpeg' : 'video/mp4',
-  location: t.location,
-  district: t.district,
-  language: t.language,
-  tags: ['Malawi', t.district, t.categoryLabel],
-  keyTakeaways: t.keyTakeaways,
-  status: 'published',
-  isFeatured: !!t.isFeatured,
-  createdBy: 'user-super-admin',
-  updatedBy: null,
-  archivedAt: null,
-  createdAt: new Date(Date.now() - (8 - idx) * 86400000 * 3),
-  updatedAt: new Date(Date.now() - (8 - idx) * 86400000 * 3),
-}));
-
-const memoryInvitations: InvitationData[] = [
-  {
-    id: 'inv-1',
-    email: 'daawah.zomba@khutbah.mw',
-    role: 'admin',
-    permissions: ['media.view', 'media.create', 'media.update'],
-    invitedBy: 'user-super-admin',
-    token: 'tok_seeded_zomba_invite_hash',
-    expiresAt: new Date(Date.now() + 86400000 * 5),
-    status: 'pending',
-    message: 'Welcome to the Malawi Islamic Media admin circle.',
-    createdAt: new Date(Date.now() - 86400000 * 2),
-  },
-  {
-    id: 'inv-2',
-    email: 'community.mangochi@khutbah.mw',
-    role: 'listener',
-    permissions: [],
-    invitedBy: 'user-super-admin',
-    token: 'tok_seeded_listener_invite_hash',
-    expiresAt: new Date(Date.now() - 86400000 * 1),
-    status: 'expired',
-    message: 'Early access preview for listeners.',
-    createdAt: new Date(Date.now() - 86400000 * 8),
-  },
-];
-
-const memoryAuditLogs: AuditLogData[] = [
-  {
-    id: 'audit-1',
-    actorId: 'user-super-admin',
-    actorEmail: 'admin@khutbah.mw',
-    actorName: 'Sheikh Yusuf Banda',
-    action: 'media.created',
-    targetType: 'media',
-    targetId: 'teaching-1',
-    targetSummary: 'Uploaded "The Importance of Salah"',
-    details: { mediaType: 'audio', district: 'Blantyre' },
-    status: 'success',
-    createdAt: new Date(Date.now() - 86400000 * 3),
-  },
-  {
-    id: 'audit-2',
-    actorId: 'user-super-admin',
-    actorEmail: 'admin@khutbah.mw',
-    actorName: 'Sheikh Yusuf Banda',
-    action: 'admin.permissions_updated',
-    targetType: 'admin',
-    targetId: 'user-media-editor',
-    targetSummary: 'Updated permissions for Ustadh Ibrahim Mataka',
-    details: { added: ['media.archive'], removed: [] },
-    status: 'success',
-    createdAt: new Date(Date.now() - 86400000 * 2),
-  },
-  {
-    id: 'audit-3',
-    actorId: 'user-super-admin',
-    actorEmail: 'admin@khutbah.mw',
-    actorName: 'Sheikh Yusuf Banda',
-    action: 'user.invited',
-    targetType: 'invitation',
-    targetId: 'inv-1',
-    targetSummary: 'Sent admin invitation to daawah.zomba@khutbah.mw',
-    details: { role: 'admin', permissionsCount: 3 },
-    status: 'success',
-    createdAt: new Date(Date.now() - 86400000 * 1),
-  },
-];
-
 // =========================================================================
-// Data Access Methods (Universal: Drizzle with Neon or In-Memory fallback)
+// Real Database Operations (Drizzle ORM over Neon PostgreSQL)
 // =========================================================================
 
 export async function getUserById(id: string): Promise<AdminUserData | null> {
-  const userItem = memoryUsers.find((u) => u.id === id);
-  return userItem || null;
+  const [userRow] = await db
+    .select()
+    .from(schema.user)
+    .where(eq(schema.user.id, id))
+    .limit(1);
+
+  if (!userRow) return null;
+
+  const perms = await db
+    .select({ permissionId: schema.adminPermission.permissionId })
+    .from(schema.adminPermission)
+    .where(eq(schema.adminPermission.userId, id));
+
+  return {
+    id: userRow.id,
+    name: userRow.name,
+    email: userRow.email,
+    emailVerified: userRow.emailVerified,
+    image: userRow.image,
+    role: userRow.role as 'admin' | 'listener',
+    status: userRow.status as 'active' | 'suspended' | 'pending',
+    createdAt: userRow.createdAt,
+    updatedAt: userRow.updatedAt,
+    permissions: perms.map((p) => p.permissionId as PermissionId),
+  };
 }
 
 export async function getUserByEmail(email: string): Promise<AdminUserData | null> {
-  const normalized = email.trim().toLowerCase();
-  const userItem = memoryUsers.find((u) => u.email.toLowerCase() === normalized);
-  return userItem || null;
+  const [userRow] = await db
+    .select()
+    .from(schema.user)
+    .where(eq(schema.user.email, email.trim().toLowerCase()))
+    .limit(1);
+
+  if (!userRow) return null;
+
+  const perms = await db
+    .select({ permissionId: schema.adminPermission.permissionId })
+    .from(schema.adminPermission)
+    .where(eq(schema.adminPermission.userId, userRow.id));
+
+  return {
+    id: userRow.id,
+    name: userRow.name,
+    email: userRow.email,
+    emailVerified: userRow.emailVerified,
+    image: userRow.image,
+    role: userRow.role as 'admin' | 'listener',
+    status: userRow.status as 'active' | 'suspended' | 'pending',
+    createdAt: userRow.createdAt,
+    updatedAt: userRow.updatedAt,
+    permissions: perms.map((p) => p.permissionId as PermissionId),
+  };
 }
 
 export async function listUsers(params?: {
-  search?: string;
-  role?: string;
+  role?: 'admin' | 'listener';
   status?: string;
+  search?: string;
   limit?: number;
   offset?: number;
 }): Promise<{ users: AdminUserData[]; total: number }> {
-  let list = [...memoryUsers];
+  const conditions = [];
 
-  if (params?.role && params.role !== 'all') {
-    list = list.filter((u) => u.role === params.role);
+  if (params?.role) {
+    conditions.push(eq(schema.user.role, params.role));
+  }
+  if (params?.status) {
+    conditions.push(eq(schema.user.status, params.status));
+  }
+  if (params?.search) {
+    const q = `%${params.search.toLowerCase()}%`;
+    conditions.push(or(ilike(schema.user.name, q), ilike(schema.user.email, q)));
   }
 
-  if (params?.status && params.status !== 'all') {
-    list = list.filter((u) => u.status === params.status);
-  }
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  if (params?.search && params.search.trim()) {
-    const q = params.search.toLowerCase();
-    list = list.filter(
-      (u) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
-    );
-  }
+  const [countResult] = await db
+    .select({ count: count() })
+    .from(schema.user)
+    .where(whereClause);
 
-  const total = list.length;
-  const offset = params?.offset || 0;
+  const total = Number(countResult?.count || 0);
   const limit = params?.limit || 50;
-  const paginated = list.slice(offset, offset + limit);
+  const offset = params?.offset || 0;
 
-  return { users: paginated, total };
+  const userRows = await db
+    .select()
+    .from(schema.user)
+    .where(whereClause)
+    .orderBy(desc(schema.user.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  const userIds = userRows.map((u) => u.id);
+
+  const allAdminPerms =
+    userIds.length > 0
+      ? await db
+          .select({
+            userId: schema.adminPermission.userId,
+            permissionId: schema.adminPermission.permissionId,
+          })
+          .from(schema.adminPermission)
+          .where(inArray(schema.adminPermission.userId, userIds))
+      : [];
+
+  const permsByUser = new Map<string, PermissionId[]>();
+  for (const row of allAdminPerms) {
+    const existing = permsByUser.get(row.userId) || [];
+    existing.push(row.permissionId as PermissionId);
+    permsByUser.set(row.userId, existing);
+  }
+
+  const users: AdminUserData[] = userRows.map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    emailVerified: u.emailVerified,
+    image: u.image,
+    role: u.role as 'admin' | 'listener',
+    status: u.status as 'active' | 'suspended' | 'pending',
+    createdAt: u.createdAt,
+    updatedAt: u.updatedAt,
+    permissions: permsByUser.get(u.id) || [],
+  }));
+
+  return { users, total };
 }
 
 export async function listAdmins(): Promise<AdminUserData[]> {
-  return memoryUsers.filter((u) => u.role === 'admin');
+  const result = await listUsers({ role: 'admin', limit: 100 });
+  return result.users;
 }
 
 export async function createUser(data: {
@@ -299,61 +231,67 @@ export async function createUser(data: {
     throw new Error('A user with this email address already exists');
   }
 
-  const newUser: AdminUserData = {
-    id: `user-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+  const id = crypto.randomUUID();
+  const now = new Date();
+
+  await db.insert(schema.user).values({
+    id,
     name: data.name,
     email: data.email.trim().toLowerCase(),
     emailVerified: false,
     image: null,
     role: data.role,
     status: data.status || 'active',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    permissions: data.role === 'admin' ? data.permissions || [] : [],
-  };
-
-  memoryUsers.unshift(newUser);
-  broadcastStatsUpdate({
-    totalUsers: memoryUsers.length,
-    totalAdmins: memoryUsers.filter((u) => u.role === 'admin').length,
-    totalListeners: memoryUsers.filter((u) => u.role === 'listener').length,
-    totalPublishedMedia: memoryMedia.filter((m) => m.status === 'published').length,
-    totalArchivedMedia: memoryMedia.filter((m) => m.status === 'archived').length,
-    totalDraftMedia: memoryMedia.filter((m) => m.status === 'draft').length,
+    createdAt: now,
+    updatedAt: now,
   });
-  return newUser;
+
+  if (data.role === 'admin' && data.permissions && data.permissions.length > 0) {
+    const permInserts = data.permissions.map((p) => ({
+      id: crypto.randomUUID(),
+      userId: id,
+      permissionId: p,
+      grantedBy: data.grantedBy || null,
+      grantedAt: now,
+    }));
+    await db.insert(schema.adminPermission).values(permInserts);
+  }
+
+  const created = await getUserById(id);
+  if (!created) throw new Error('Failed to retrieve newly created user');
+
+  const currentStats = await getDashboardStats();
+  broadcastStatsUpdate(currentStats);
+
+  return created;
 }
 
 export async function updateUser(
   id: string,
   updates: Partial<Pick<AdminUserData, 'name' | 'role' | 'status' | 'image'>>
 ): Promise<AdminUserData> {
-  const userIdx = memoryUsers.findIndex((u) => u.id === id);
-  if (userIdx === -1) {
-    throw new Error('User not found');
-  }
+  const now = new Date();
 
-  const current = memoryUsers[userIdx];
-  const updated: AdminUserData = {
-    ...current,
-    ...updates,
-    updatedAt: new Date(),
-  };
+  await db
+    .update(schema.user)
+    .set({
+      ...updates,
+      updatedAt: now,
+    })
+    .where(eq(schema.user.id, id));
 
-  // If demoting to listener, wipe permissions
   if (updates.role === 'listener') {
-    updated.permissions = [];
+    await db
+      .delete(schema.adminPermission)
+      .where(eq(schema.adminPermission.userId, id));
   }
 
-  memoryUsers[userIdx] = updated;
-  broadcastStatsUpdate({
-    totalUsers: memoryUsers.length,
-    totalAdmins: memoryUsers.filter((u) => u.role === 'admin').length,
-    totalListeners: memoryUsers.filter((u) => u.role === 'listener').length,
-    totalPublishedMedia: memoryMedia.filter((m) => m.status === 'published').length,
-    totalArchivedMedia: memoryMedia.filter((m) => m.status === 'archived').length,
-    totalDraftMedia: memoryMedia.filter((m) => m.status === 'draft').length,
-  });
+  const updated = await getUserById(id);
+  if (!updated) throw new Error('User not found after update');
+
+  const currentStats = await getDashboardStats();
+  broadcastStatsUpdate(currentStats);
+
   return updated;
 }
 
@@ -361,192 +299,460 @@ export async function setUserPermissions(
   userId: string,
   newPermissions: PermissionId[]
 ): Promise<AdminUserData> {
-  const userIdx = memoryUsers.findIndex((u) => u.id === userId);
-  if (userIdx === -1) {
-    throw new Error('User not found');
-  }
-
-  const target = memoryUsers[userIdx];
+  const target = await getUserById(userId);
+  if (!target) throw new Error('User not found');
   if (target.role !== 'admin') {
     throw new Error('Permissions can only be assigned to administrators');
   }
 
-  // Deduplicate and validate
   const validPermissions = Array.from(
     new Set(newPermissions.filter((p) => ALL_PERMISSION_IDS.includes(p)))
   );
 
-  memoryUsers[userIdx] = {
-    ...target,
-    permissions: validPermissions,
-    updatedAt: new Date(),
-  };
+  await db
+    .delete(schema.adminPermission)
+    .where(eq(schema.adminPermission.userId, userId));
 
-  return memoryUsers[userIdx];
+  if (validPermissions.length > 0) {
+    const now = new Date();
+    await db.insert(schema.adminPermission).values(
+      validPermissions.map((p) => ({
+        id: crypto.randomUUID(),
+        userId,
+        permissionId: p,
+        grantedAt: now,
+      }))
+    );
+  }
+
+  await db
+    .update(schema.user)
+    .set({ updatedAt: new Date() })
+    .where(eq(schema.user.id, userId));
+
+  const updated = await getUserById(userId);
+  if (!updated) throw new Error('Failed to retrieve user after permissions update');
+
+  const currentStats = await getDashboardStats();
+  broadcastStatsUpdate(currentStats);
+
+  return updated;
 }
 
-/**
- * Safeguard check: ensure we do not delete, demote, or strip permissions from the last admin with a critical permission.
- */
 export async function isLastAdminWithPermission(
   userId: string,
   permissionId: PermissionId = 'admins.permissions.manage'
 ): Promise<boolean> {
-  const adminsWithPerm = memoryUsers.filter(
-    (u) => u.role === 'admin' && u.status === 'active' && u.permissions.includes(permissionId)
-  );
+  const adminsWithPerm = await db
+    .select({ id: schema.user.id })
+    .from(schema.user)
+    .innerJoin(
+      schema.adminPermission,
+      eq(schema.user.id, schema.adminPermission.userId)
+    )
+    .where(
+      and(
+        eq(schema.user.role, 'admin'),
+        eq(schema.user.status, 'active'),
+        eq(schema.adminPermission.permissionId, permissionId)
+      )
+    );
 
-  if (adminsWithPerm.length <= 1 && adminsWithPerm.some((u) => u.id === userId)) {
-    return true;
-  }
-  return false;
+  return adminsWithPerm.length === 1 && adminsWithPerm[0].id === userId;
 }
 
-// Media Data Operations
 export async function listMedia(params?: {
-  search?: string;
-  mediaType?: string;
+  status?: 'published' | 'draft' | 'archived';
+  mediaType?: 'audio' | 'video';
   categoryId?: string;
-  status?: string;
+  district?: string;
+  search?: string;
   limit?: number;
   offset?: number;
 }): Promise<{ media: MediaItemData[]; total: number }> {
-  let list = [...memoryMedia];
+  const conditions = [];
 
-  if (params?.mediaType && params.mediaType !== 'all') {
-    list = list.filter((m) => m.mediaType === params.mediaType);
+  if (params?.status) {
+    conditions.push(eq(schema.media.status, params.status));
   }
-
-  if (params?.categoryId && params.categoryId !== 'all') {
-    list = list.filter((m) => m.categoryId === params.categoryId);
+  if (params?.mediaType) {
+    conditions.push(eq(schema.media.mediaType, params.mediaType));
   }
-
-  if (params?.status && params.status !== 'all') {
-    list = list.filter((m) => m.status === params.status);
+  if (params?.categoryId) {
+    conditions.push(eq(schema.media.categoryId, params.categoryId));
   }
-
-  if (params?.search && params.search.trim()) {
-    const q = params.search.toLowerCase();
-    list = list.filter(
-      (m) =>
-        m.title.toLowerCase().includes(q) ||
-        m.speaker.toLowerCase().includes(q) ||
-        m.location.toLowerCase().includes(q)
+  if (params?.district) {
+    conditions.push(eq(schema.media.district, params.district));
+  }
+  if (params?.search) {
+    const q = `%${params.search.toLowerCase()}%`;
+    conditions.push(
+      or(
+        ilike(schema.media.title, q),
+        ilike(schema.media.speaker, q),
+        ilike(schema.media.description, q),
+        ilike(schema.media.district, q)
+      )
     );
   }
 
-  // Sort by latest created first
-  list.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const total = list.length;
+  const [countRes] = await db
+    .select({ count: count() })
+    .from(schema.media)
+    .where(whereClause);
+
+  const total = Number(countRes?.count || 0);
+  const limit = params?.limit || 20;
   const offset = params?.offset || 0;
-  const limit = params?.limit || 50;
-  const paginated = list.slice(offset, offset + limit);
 
-  return { media: paginated, total };
+  const rows = await db
+    .select()
+    .from(schema.media)
+    .where(whereClause)
+    .orderBy(desc(schema.media.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  const mediaList: MediaItemData[] = rows.map((m) => ({
+    id: m.id,
+    title: m.title,
+    description: m.description,
+    speaker: m.speaker,
+    speakerTitle: m.speakerTitle,
+    categoryId: m.categoryId,
+    categoryLabel: m.categoryLabel,
+    mediaType: m.mediaType as 'audio' | 'video',
+    duration: m.duration,
+    durationSeconds: m.durationSeconds,
+    storageKey: m.storageKey,
+    storageUrl: m.storageUrl,
+    thumbnailKey: m.thumbnailKey,
+    thumbnailUrl: m.thumbnailUrl,
+    fileSize: m.fileSize ?? 0,
+    mimeType: m.mimeType,
+    location: m.location,
+    district: m.district,
+    language: m.language,
+    tags: (m.tags as string[]) || [],
+    keyTakeaways: (m.keyTakeaways as string[]) || [],
+    status: m.status as 'published' | 'draft' | 'archived',
+    isFeatured: m.isFeatured,
+    createdBy: m.createdBy,
+    updatedBy: m.updatedBy,
+    archivedAt: m.archivedAt,
+    createdAt: m.createdAt,
+    updatedAt: m.updatedAt,
+  }));
+
+  return { media: mediaList, total };
 }
 
 export async function getMediaById(id: string): Promise<MediaItemData | null> {
-  return memoryMedia.find((m) => m.id === id) || null;
+  const [m] = await db
+    .select()
+    .from(schema.media)
+    .where(eq(schema.media.id, id))
+    .limit(1);
+
+  if (!m) return null;
+
+  return {
+    id: m.id,
+    title: m.title,
+    description: m.description,
+    speaker: m.speaker,
+    speakerTitle: m.speakerTitle,
+    categoryId: m.categoryId,
+    categoryLabel: m.categoryLabel,
+    mediaType: m.mediaType as 'audio' | 'video',
+    duration: m.duration,
+    durationSeconds: m.durationSeconds,
+    storageKey: m.storageKey,
+    storageUrl: m.storageUrl,
+    thumbnailKey: m.thumbnailKey,
+    thumbnailUrl: m.thumbnailUrl,
+    fileSize: m.fileSize ?? 0,
+    mimeType: m.mimeType,
+    location: m.location,
+    district: m.district,
+    language: m.language,
+    tags: (m.tags as string[]) || [],
+    keyTakeaways: (m.keyTakeaways as string[]) || [],
+    status: m.status as 'published' | 'draft' | 'archived',
+    isFeatured: m.isFeatured,
+    createdBy: m.createdBy,
+    updatedBy: m.updatedBy,
+    archivedAt: m.archivedAt,
+    createdAt: m.createdAt,
+    updatedAt: m.updatedAt,
+  };
 }
 
-export async function createMedia(data: Omit<MediaItemData, 'id' | 'createdAt' | 'updatedAt'>): Promise<MediaItemData> {
-  const newMedia: MediaItemData = {
-    ...data,
-    id: `media-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+export async function createMedia(
+  data: Omit<MediaItemData, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<MediaItemData> {
+  const id = `media-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+  const now = new Date();
+
+  const [created] = await db
+    .insert(schema.media)
+    .values({
+      id,
+      title: data.title,
+      description: data.description,
+      speaker: data.speaker,
+      speakerTitle: data.speakerTitle,
+      categoryId: data.categoryId,
+      categoryLabel: data.categoryLabel,
+      mediaType: data.mediaType,
+      duration: data.duration,
+      durationSeconds: data.durationSeconds,
+      storageKey: data.storageKey,
+      storageUrl: data.storageUrl,
+      thumbnailKey: data.thumbnailKey || null,
+      thumbnailUrl: data.thumbnailUrl || null,
+      fileSize: data.fileSize || 0,
+      mimeType: data.mimeType,
+      location: data.location,
+      district: data.district,
+      language: data.language,
+      tags: data.tags || [],
+      keyTakeaways: data.keyTakeaways || [],
+      status: data.status || 'published',
+      isFeatured: data.isFeatured || false,
+      createdBy: data.createdBy,
+      updatedBy: data.updatedBy || null,
+      archivedAt: data.archivedAt || null,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning();
+
+  const result: MediaItemData = {
+    id: created.id,
+    title: created.title,
+    description: created.description,
+    speaker: created.speaker,
+    speakerTitle: created.speakerTitle,
+    categoryId: created.categoryId,
+    categoryLabel: created.categoryLabel,
+    mediaType: created.mediaType as 'audio' | 'video',
+    duration: created.duration,
+    durationSeconds: created.durationSeconds,
+    storageKey: created.storageKey,
+    storageUrl: created.storageUrl,
+    thumbnailKey: created.thumbnailKey,
+    thumbnailUrl: created.thumbnailUrl,
+    fileSize: created.fileSize ?? 0,
+    mimeType: created.mimeType,
+    location: created.location,
+    district: created.district,
+    language: created.language,
+    tags: (created.tags as string[]) || [],
+    keyTakeaways: (created.keyTakeaways as string[]) || [],
+    status: created.status as 'published' | 'draft' | 'archived',
+    isFeatured: created.isFeatured,
+    createdBy: created.createdBy,
+    updatedBy: created.updatedBy,
+    archivedAt: created.archivedAt,
+    createdAt: created.createdAt,
+    updatedAt: created.updatedAt,
   };
 
-  memoryMedia.unshift(newMedia);
-  broadcastStatsUpdate({
-    totalUsers: memoryUsers.length,
-    totalAdmins: memoryUsers.filter((u) => u.role === 'admin').length,
-    totalListeners: memoryUsers.filter((u) => u.role === 'listener').length,
-    totalPublishedMedia: memoryMedia.filter((m) => m.status === 'published').length,
-    totalArchivedMedia: memoryMedia.filter((m) => m.status === 'archived').length,
-    totalDraftMedia: memoryMedia.filter((m) => m.status === 'draft').length,
-  });
-  return newMedia;
+  const currentStats = await getDashboardStats();
+  broadcastStatsUpdate(currentStats);
+
+  return result;
 }
 
 export async function updateMedia(
   id: string,
   updates: Partial<Omit<MediaItemData, 'id' | 'createdAt' | 'createdBy'>>
 ): Promise<MediaItemData> {
-  const idx = memoryMedia.findIndex((m) => m.id === id);
-  if (idx === -1) {
+  const now = new Date();
+
+  const [updated] = await db
+    .update(schema.media)
+    .set({
+      ...updates,
+      updatedAt: now,
+    })
+    .where(eq(schema.media.id, id))
+    .returning();
+
+  if (!updated) {
     throw new Error('Media item not found');
   }
 
-  memoryMedia[idx] = {
-    ...memoryMedia[idx],
-    ...updates,
-    updatedAt: new Date(),
+  const result: MediaItemData = {
+    id: updated.id,
+    title: updated.title,
+    description: updated.description,
+    speaker: updated.speaker,
+    speakerTitle: updated.speakerTitle,
+    categoryId: updated.categoryId,
+    categoryLabel: updated.categoryLabel,
+    mediaType: updated.mediaType as 'audio' | 'video',
+    duration: updated.duration,
+    durationSeconds: updated.durationSeconds,
+    storageKey: updated.storageKey,
+    storageUrl: updated.storageUrl,
+    thumbnailKey: updated.thumbnailKey,
+    thumbnailUrl: updated.thumbnailUrl,
+    fileSize: updated.fileSize ?? 0,
+    mimeType: updated.mimeType,
+    location: updated.location,
+    district: updated.district,
+    language: updated.language,
+    tags: (updated.tags as string[]) || [],
+    keyTakeaways: (updated.keyTakeaways as string[]) || [],
+    status: updated.status as 'published' | 'draft' | 'archived',
+    isFeatured: updated.isFeatured,
+    createdBy: updated.createdBy,
+    updatedBy: updated.updatedBy,
+    archivedAt: updated.archivedAt,
+    createdAt: updated.createdAt,
+    updatedAt: updated.updatedAt,
   };
 
-  return memoryMedia[idx];
+  const currentStats = await getDashboardStats();
+  broadcastStatsUpdate(currentStats);
+
+  return result;
 }
 
 export async function archiveMedia(id: string): Promise<MediaItemData> {
-  const idx = memoryMedia.findIndex((m) => m.id === id);
-  if (idx === -1) throw new Error('Media item not found');
+  const now = new Date();
 
-  memoryMedia[idx] = {
-    ...memoryMedia[idx],
+  const [archived] = await db
+    .update(schema.media)
+    .set({
+      status: 'archived',
+      archivedAt: now,
+      updatedAt: now,
+    })
+    .where(eq(schema.media.id, id))
+    .returning();
+
+  if (!archived) throw new Error('Media item not found');
+
+  const currentStats = await getDashboardStats();
+  broadcastStatsUpdate(currentStats);
+
+  return {
+    id: archived.id,
+    title: archived.title,
+    description: archived.description,
+    speaker: archived.speaker,
+    speakerTitle: archived.speakerTitle,
+    categoryId: archived.categoryId,
+    categoryLabel: archived.categoryLabel,
+    mediaType: archived.mediaType as 'audio' | 'video',
+    duration: archived.duration,
+    durationSeconds: archived.durationSeconds,
+    storageKey: archived.storageKey,
+    storageUrl: archived.storageUrl,
+    thumbnailKey: archived.thumbnailKey,
+    thumbnailUrl: archived.thumbnailUrl,
+    fileSize: archived.fileSize ?? 0,
+    mimeType: archived.mimeType,
+    location: archived.location,
+    district: archived.district,
+    language: archived.language,
+    tags: (archived.tags as string[]) || [],
+    keyTakeaways: (archived.keyTakeaways as string[]) || [],
     status: 'archived',
-    archivedAt: new Date(),
-    updatedAt: new Date(),
+    isFeatured: archived.isFeatured,
+    createdBy: archived.createdBy,
+    updatedBy: archived.updatedBy,
+    archivedAt: archived.archivedAt,
+    createdAt: archived.createdAt,
+    updatedAt: archived.updatedAt,
   };
-  broadcastStatsUpdate({
-    totalUsers: memoryUsers.length,
-    totalAdmins: memoryUsers.filter((u) => u.role === 'admin').length,
-    totalListeners: memoryUsers.filter((u) => u.role === 'listener').length,
-    totalPublishedMedia: memoryMedia.filter((m) => m.status === 'published').length,
-    totalArchivedMedia: memoryMedia.filter((m) => m.status === 'archived').length,
-    totalDraftMedia: memoryMedia.filter((m) => m.status === 'draft').length,
-  });
-  return memoryMedia[idx];
 }
 
 export async function restoreMedia(id: string): Promise<MediaItemData> {
-  const idx = memoryMedia.findIndex((m) => m.id === id);
-  if (idx === -1) throw new Error('Media item not found');
+  const now = new Date();
 
-  memoryMedia[idx] = {
-    ...memoryMedia[idx],
+  const [restored] = await db
+    .update(schema.media)
+    .set({
+      status: 'published',
+      archivedAt: null,
+      updatedAt: now,
+    })
+    .where(eq(schema.media.id, id))
+    .returning();
+
+  if (!restored) throw new Error('Media item not found');
+
+  const currentStats = await getDashboardStats();
+  broadcastStatsUpdate(currentStats);
+
+  return {
+    id: restored.id,
+    title: restored.title,
+    description: restored.description,
+    speaker: restored.speaker,
+    speakerTitle: restored.speakerTitle,
+    categoryId: restored.categoryId,
+    categoryLabel: restored.categoryLabel,
+    mediaType: restored.mediaType as 'audio' | 'video',
+    duration: restored.duration,
+    durationSeconds: restored.durationSeconds,
+    storageKey: restored.storageKey,
+    storageUrl: restored.storageUrl,
+    thumbnailKey: restored.thumbnailKey,
+    thumbnailUrl: restored.thumbnailUrl,
+    fileSize: restored.fileSize ?? 0,
+    mimeType: restored.mimeType,
+    location: restored.location,
+    district: restored.district,
+    language: restored.language,
+    tags: (restored.tags as string[]) || [],
+    keyTakeaways: (restored.keyTakeaways as string[]) || [],
     status: 'published',
-    archivedAt: null,
-    updatedAt: new Date(),
+    isFeatured: restored.isFeatured,
+    createdBy: restored.createdBy,
+    updatedBy: restored.updatedBy,
+    archivedAt: restored.archivedAt,
+    createdAt: restored.createdAt,
+    updatedAt: restored.updatedAt,
   };
-  broadcastStatsUpdate({
-    totalUsers: memoryUsers.length,
-    totalAdmins: memoryUsers.filter((u) => u.role === 'admin').length,
-    totalListeners: memoryUsers.filter((u) => u.role === 'listener').length,
-    totalPublishedMedia: memoryMedia.filter((m) => m.status === 'published').length,
-    totalArchivedMedia: memoryMedia.filter((m) => m.status === 'archived').length,
-    totalDraftMedia: memoryMedia.filter((m) => m.status === 'draft').length,
-  });
-  return memoryMedia[idx];
 }
 
 export async function deleteMedia(id: string): Promise<void> {
-  const idx = memoryMedia.findIndex((m) => m.id === id);
-  if (idx === -1) throw new Error('Media item not found');
-  memoryMedia.splice(idx, 1);
-  broadcastStatsUpdate({
-    totalUsers: memoryUsers.length,
-    totalAdmins: memoryUsers.filter((u) => u.role === 'admin').length,
-    totalListeners: memoryUsers.filter((u) => u.role === 'listener').length,
-    totalPublishedMedia: memoryMedia.filter((m) => m.status === 'published').length,
-    totalArchivedMedia: memoryMedia.filter((m) => m.status === 'archived').length,
-    totalDraftMedia: memoryMedia.filter((m) => m.status === 'draft').length,
-  });
+  await db.delete(schema.media).where(eq(schema.media.id, id));
+  const currentStats = await getDashboardStats();
+  broadcastStatsUpdate(currentStats);
 }
 
+// =========================================================================
 // Invitation Data Operations
+// =========================================================================
+
 export async function listInvitations(): Promise<InvitationData[]> {
-  return [...memoryInvitations].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  const rows = await db
+    .select()
+    .from(schema.invitation)
+    .orderBy(desc(schema.invitation.createdAt));
+
+  return rows.map((inv) => ({
+    id: inv.id,
+    email: inv.email,
+    role: inv.role as 'admin' | 'listener',
+    permissions: (inv.permissions as PermissionId[]) || [],
+    invitedBy: inv.invitedBy,
+    token: inv.token,
+    expiresAt: inv.expiresAt,
+    status: inv.status as 'pending' | 'accepted' | 'expired' | 'revoked',
+    acceptedAt: inv.acceptedAt,
+    revokedAt: inv.revokedAt,
+    message: inv.message,
+    createdAt: inv.createdAt,
+  }));
 }
 
 export async function createInvitation(data: {
@@ -556,80 +762,196 @@ export async function createInvitation(data: {
   invitedBy: string;
   message?: string;
 }): Promise<InvitationData> {
-  const newInv: InvitationData = {
-    id: `inv-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-    email: data.email.trim().toLowerCase(),
-    role: data.role,
-    permissions: data.role === 'admin' ? data.permissions : [],
-    invitedBy: data.invitedBy,
-    token: `tok_${Math.random().toString(36).substring(2)}${Date.now().toString(36)}`,
-    expiresAt: new Date(Date.now() + 86400000 * 7), // 7 days expiration
-    status: 'pending',
-    message: data.message || null,
-    createdAt: new Date(),
-  };
+  const id = `inv-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+  const token = `tok_${Math.random().toString(36).substring(2)}${Date.now().toString(36)}`;
+  const now = new Date();
+  const expiresAt = new Date(Date.now() + 86400000 * 7);
 
-  memoryInvitations.unshift(newInv);
-  return newInv;
+  const [created] = await db
+    .insert(schema.invitation)
+    .values({
+      id,
+      email: data.email.trim().toLowerCase(),
+      role: data.role,
+      permissions: data.role === 'admin' ? data.permissions : [],
+      invitedBy: data.invitedBy,
+      token,
+      expiresAt,
+      status: 'pending',
+      message: data.message || null,
+      createdAt: now,
+    })
+    .returning();
+
+  return {
+    id: created.id,
+    email: created.email,
+    role: created.role as 'admin' | 'listener',
+    permissions: (created.permissions as PermissionId[]) || [],
+    invitedBy: created.invitedBy,
+    token: created.token,
+    expiresAt: created.expiresAt,
+    status: created.status as 'pending' | 'accepted' | 'expired' | 'revoked',
+    acceptedAt: created.acceptedAt,
+    revokedAt: created.revokedAt,
+    message: created.message,
+    createdAt: created.createdAt,
+  };
 }
 
 export async function revokeInvitation(id: string): Promise<InvitationData> {
-  const idx = memoryInvitations.findIndex((inv) => inv.id === id);
-  if (idx === -1) throw new Error('Invitation not found');
+  const [revoked] = await db
+    .update(schema.invitation)
+    .set({
+      status: 'revoked',
+      revokedAt: new Date(),
+    })
+    .where(eq(schema.invitation.id, id))
+    .returning();
 
-  memoryInvitations[idx] = {
-    ...memoryInvitations[idx],
+  if (!revoked) throw new Error('Invitation not found');
+
+  return {
+    id: revoked.id,
+    email: revoked.email,
+    role: revoked.role as 'admin' | 'listener',
+    permissions: (revoked.permissions as PermissionId[]) || [],
+    invitedBy: revoked.invitedBy,
+    token: revoked.token,
+    expiresAt: revoked.expiresAt,
     status: 'revoked',
-    revokedAt: new Date(),
+    acceptedAt: revoked.acceptedAt,
+    revokedAt: revoked.revokedAt,
+    message: revoked.message,
+    createdAt: revoked.createdAt,
   };
-  return memoryInvitations[idx];
 }
 
 export async function resendInvitation(id: string): Promise<InvitationData> {
-  const idx = memoryInvitations.findIndex((inv) => inv.id === id);
-  if (idx === -1) throw new Error('Invitation not found');
+  const token = `tok_${Math.random().toString(36).substring(2)}${Date.now().toString(36)}`;
+  const expiresAt = new Date(Date.now() + 86400000 * 7);
 
-  // Refresh expiration & token
-  memoryInvitations[idx] = {
-    ...memoryInvitations[idx],
-    token: `tok_${Math.random().toString(36).substring(2)}${Date.now().toString(36)}`,
-    expiresAt: new Date(Date.now() + 86400000 * 7),
+  const [resent] = await db
+    .update(schema.invitation)
+    .set({
+      token,
+      expiresAt,
+      status: 'pending',
+    })
+    .where(eq(schema.invitation.id, id))
+    .returning();
+
+  if (!resent) throw new Error('Invitation not found');
+
+  return {
+    id: resent.id,
+    email: resent.email,
+    role: resent.role as 'admin' | 'listener',
+    permissions: (resent.permissions as PermissionId[]) || [],
+    invitedBy: resent.invitedBy,
+    token: resent.token,
+    expiresAt: resent.expiresAt,
     status: 'pending',
+    acceptedAt: resent.acceptedAt,
+    revokedAt: resent.revokedAt,
+    message: resent.message,
+    createdAt: resent.createdAt,
   };
-  return memoryInvitations[idx];
 }
 
+// =========================================================================
 // Audit Log Data Operations
+// =========================================================================
+
 export async function listAuditLogs(params?: {
   limit?: number;
   offset?: number;
 }): Promise<{ logs: AuditLogData[]; total: number }> {
-  const sorted = [...memoryAuditLogs].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   const limit = params?.limit || 50;
   const offset = params?.offset || 0;
-  return { logs: sorted.slice(offset, offset + limit), total: sorted.length };
+
+  const [countRes] = await db
+    .select({ count: count() })
+    .from(schema.auditLog);
+
+  const total = Number(countRes?.count || 0);
+
+  const rows = await db
+    .select()
+    .from(schema.auditLog)
+    .orderBy(desc(schema.auditLog.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  const logs: AuditLogData[] = rows.map((l) => ({
+    id: l.id,
+    actorId: l.actorId,
+    actorEmail: l.actorEmail,
+    actorName: l.actorName,
+    action: l.action,
+    targetType: l.targetType as 'user' | 'admin' | 'media' | 'invitation',
+    targetId: l.targetId,
+    targetSummary: l.targetSummary,
+    details: (l.details as Record<string, unknown>) || {},
+    ipAddress: l.ipAddress,
+    status: l.status as 'success' | 'failure',
+    createdAt: l.createdAt,
+  }));
+
+  return { logs, total };
 }
 
-export async function createAuditLog(entry: Omit<AuditLogData, 'id' | 'createdAt'>): Promise<AuditLogData> {
+export async function createAuditLog(
+  entry: Omit<AuditLogData, 'id' | 'createdAt'>
+): Promise<AuditLogData> {
+  const id = `audit-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+  const now = new Date();
+
+  const [created] = await db
+    .insert(schema.auditLog)
+    .values({
+      id,
+      actorId: entry.actorId,
+      actorEmail: entry.actorEmail,
+      actorName: entry.actorName,
+      action: entry.action,
+      targetType: entry.targetType,
+      targetId: entry.targetId,
+      targetSummary: entry.targetSummary,
+      details: entry.details,
+      ipAddress: entry.ipAddress || null,
+      status: entry.status || 'success',
+      createdAt: now,
+    })
+    .returning();
+
   const newLog: AuditLogData = {
-    ...entry,
-    id: `audit-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-    createdAt: new Date(),
+    id: created.id,
+    actorId: created.actorId,
+    actorEmail: created.actorEmail,
+    actorName: created.actorName,
+    action: created.action,
+    targetType: created.targetType as 'user' | 'admin' | 'media' | 'invitation',
+    targetId: created.targetId,
+    targetSummary: created.targetSummary,
+    details: (created.details as Record<string, unknown>) || {},
+    ipAddress: created.ipAddress,
+    status: created.status as 'success' | 'failure',
+    createdAt: created.createdAt,
   };
-  memoryAuditLogs.unshift(newLog);
+
   broadcastAuditLog(newLog);
-  broadcastStatsUpdate({
-    totalUsers: memoryUsers.length,
-    totalAdmins: memoryUsers.filter((u) => u.role === 'admin').length,
-    totalListeners: memoryUsers.filter((u) => u.role === 'listener').length,
-    totalPublishedMedia: memoryMedia.filter((m) => m.status === 'published').length,
-    totalArchivedMedia: memoryMedia.filter((m) => m.status === 'archived').length,
-    totalDraftMedia: memoryMedia.filter((m) => m.status === 'draft').length,
-  });
+
+  const currentStats = await getDashboardStats();
+  broadcastStatsUpdate(currentStats);
+
   return newLog;
 }
 
-// Platform Stats
+// =========================================================================
+// Real-time Platform Stats (Database Queries)
+// =========================================================================
+
 export async function getDashboardStats(): Promise<{
   totalUsers: number;
   totalAdmins: number;
@@ -638,12 +960,28 @@ export async function getDashboardStats(): Promise<{
   totalArchivedMedia: number;
   totalDraftMedia: number;
 }> {
+  const [
+    [usersCount],
+    [adminsCount],
+    [listenersCount],
+    [publishedMediaCount],
+    [archivedMediaCount],
+    [draftMediaCount],
+  ] = await Promise.all([
+    db.select({ count: count() }).from(schema.user),
+    db.select({ count: count() }).from(schema.user).where(eq(schema.user.role, 'admin')),
+    db.select({ count: count() }).from(schema.user).where(eq(schema.user.role, 'listener')),
+    db.select({ count: count() }).from(schema.media).where(eq(schema.media.status, 'published')),
+    db.select({ count: count() }).from(schema.media).where(eq(schema.media.status, 'archived')),
+    db.select({ count: count() }).from(schema.media).where(eq(schema.media.status, 'draft')),
+  ]);
+
   return {
-    totalUsers: memoryUsers.length,
-    totalAdmins: memoryUsers.filter((u) => u.role === 'admin').length,
-    totalListeners: memoryUsers.filter((u) => u.role === 'listener').length,
-    totalPublishedMedia: memoryMedia.filter((m) => m.status === 'published').length,
-    totalArchivedMedia: memoryMedia.filter((m) => m.status === 'archived').length,
-    totalDraftMedia: memoryMedia.filter((m) => m.status === 'draft').length,
+    totalUsers: Number(usersCount?.count || 0),
+    totalAdmins: Number(adminsCount?.count || 0),
+    totalListeners: Number(listenersCount?.count || 0),
+    totalPublishedMedia: Number(publishedMediaCount?.count || 0),
+    totalArchivedMedia: Number(archivedMediaCount?.count || 0),
+    totalDraftMedia: Number(draftMediaCount?.count || 0),
   };
 }

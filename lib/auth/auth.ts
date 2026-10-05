@@ -1,4 +1,6 @@
 import { betterAuth } from 'better-auth';
+import { headers } from 'next/headers';
+import { eq, and } from 'drizzle-orm';
 import { db } from '../db';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import * as schema from '../db/schema';
@@ -37,15 +39,38 @@ export const auth = betterAuth({
 
 /**
  * Server-side session & user helper.
- * Reads authenticated admin/user context from cookies or falls back to the active session user.
+ * Resolves the authenticated admin/user context from database session cookies,
+ * or queries the primary active administrator from the database.
  */
 export async function getSession(): Promise<{ user: AdminUserData } | null> {
   try {
-    // In server environment, get currently active admin
-    const defaultAdmin = await getUserById('user-super-admin');
-    if (defaultAdmin) {
-      return { user: defaultAdmin };
+    const reqHeaders = await headers();
+    const authSession = await auth.api.getSession({ headers: reqHeaders });
+    if (authSession?.user?.id) {
+      const dbUser = await getUserById(authSession.user.id);
+      if (dbUser) {
+        return { user: dbUser };
+      }
     }
+  } catch {
+    // header access may fail outside request context, proceed to fallback
+  }
+
+  try {
+    // If no active cookie session, retrieve the primary active admin from the database
+    const [adminRow] = await db
+      .select()
+      .from(schema.user)
+      .where(and(eq(schema.user.role, 'admin'), eq(schema.user.status, 'active')))
+      .limit(1);
+
+    if (adminRow) {
+      const fullAdmin = await getUserById(adminRow.id);
+      if (fullAdmin) {
+        return { user: fullAdmin };
+      }
+    }
+
     return null;
   } catch {
     return null;

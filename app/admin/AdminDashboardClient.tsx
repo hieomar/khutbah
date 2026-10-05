@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useTransition } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Users,
@@ -14,15 +14,12 @@ import {
   ScrollText,
   Clock,
   Radio,
-  Sparkles,
-  RefreshCw,
   Search,
   Filter,
 } from 'lucide-react';
 import { AdminUserData, AuditLogData } from '../../lib/db/store';
 import { DashboardStatsData, AdminSSEPayload } from '../../lib/events/admin-events';
 import { hasPermission } from '../../lib/auth/permissions';
-import { triggerLiveAuditSimulationAction } from './actions';
 
 interface AdminDashboardClientProps {
   currentUser: AdminUserData;
@@ -44,8 +41,6 @@ export default function AdminDashboardClient({
   const [newLogIds, setNewLogIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [domainFilter, setDomainFilter] = useState('all');
-  const [isSimulating, startSimulating] = useTransition();
-  const [simulationMessage, setSimulationMessage] = useState<string | null>(null);
 
   // Real-Time Server-Sent Events (SSE) Subscription
   useEffect(() => {
@@ -77,12 +72,11 @@ export default function AdminDashboardClient({
             } else if (payload.type === 'audit') {
               const newEntry = payload.log;
               setLogs((prev) => {
-                // Avoid duplicates
                 if (prev.some((item) => item.id === newEntry.id)) return prev;
                 return [newEntry, ...prev.slice(0, 49)];
               });
 
-              // Mark as new for highlighting
+              // Mark as new for live highlight
               setNewLogIds((prev) => {
                 const updated = new Set(prev);
                 updated.add(newEntry.id);
@@ -113,7 +107,7 @@ export default function AdminDashboardClient({
             eventSource.close();
             eventSource = null;
           }
-          // Exponential backoff reconnect
+          // Reconnect with backoff
           reconnectTimeout = setTimeout(() => {
             connectSSE();
           }, 4000);
@@ -136,17 +130,6 @@ export default function AdminDashboardClient({
     };
   }, []);
 
-  const handleSimulateActivity = () => {
-    startSimulating(async () => {
-      setSimulationMessage(null);
-      const res = await triggerLiveAuditSimulationAction();
-      if (res.success && res.log) {
-        setSimulationMessage(`Broadcasted: ${res.log.targetSummary}`);
-        setTimeout(() => setSimulationMessage(null), 4000);
-      }
-    });
-  };
-
   const canCreateMedia = hasPermission(currentUser.permissions, 'media.create');
   const canInviteUsers = hasPermission(currentUser.permissions, 'users.invite');
   const canManageAdmins = hasPermission(currentUser.permissions, 'admins.permissions.manage');
@@ -158,7 +141,7 @@ export default function AdminDashboardClient({
       label: 'All registered platform accounts',
       icon: <Users className="w-5 h-5 text-[#171717]" />,
       href: '/admin/users',
-      badge: 'Real-time',
+      badge: 'Database',
     },
     {
       title: 'Administrators',
@@ -278,23 +261,8 @@ export default function AdminDashboardClient({
           )}
         </div>
 
-        {/* Quick Action Buttons & Simulation Test */}
+        {/* Quick Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Real-time SSE Live Test Trigger */}
-          <button
-            onClick={handleSimulateActivity}
-            disabled={isSimulating}
-            title="Trigger a real administrative action to broadcast over SSE"
-            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-surface border border-black/15 text-xs font-medium text-[#171717] hover:bg-black/5 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
-          >
-            {isSimulating ? (
-              <RefreshCw className="w-3.5 h-3.5 text-accent-orange animate-spin" />
-            ) : (
-              <Sparkles className="w-3.5 h-3.5 text-accent-gold" />
-            )}
-            <span>{isSimulating ? 'Broadcasting...' : 'Broadcast Test Event'}</span>
-          </button>
-
           {canCreateMedia && (
             <Link
               href="/admin/media/new"
@@ -317,18 +285,7 @@ export default function AdminDashboardClient({
         </div>
       </div>
 
-      {simulationMessage && (
-        <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center justify-between animate-fadeIn">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-            <span className="font-semibold">Live Event Dispatched:</span>
-            <span>{simulationMessage}</span>
-          </div>
-          <span className="text-[10px] font-mono text-emerald-700">Pushed via SSE</span>
-        </div>
-      )}
-
-      {/* 5 Summary Statistics Cards with Live SSE Counts */}
+      {/* 5 Summary Statistics Cards with Live SSE Counts from DB */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-secondary flex items-center gap-2">
@@ -336,7 +293,7 @@ export default function AdminDashboardClient({
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
           </h3>
           <span className="text-[11px] font-mono text-secondary">
-            Auto-updates via SSE stream
+            Live from Database via SSE
           </span>
         </div>
 
@@ -399,7 +356,7 @@ export default function AdminDashboardClient({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search live stream logs..."
+                placeholder="Search live audit logs..."
                 className="w-full bg-surface text-xs text-[#171717] placeholder-secondary/70 pl-8 pr-3 py-1.5 rounded-xl border border-black/8 focus:outline-none focus:border-[#171717]"
               />
             </div>
@@ -476,7 +433,7 @@ export default function AdminDashboardClient({
             </div>
           ) : (
             <div className="p-8 text-center text-xs text-secondary">
-              No administrative activity recorded matching criteria.
+              No administrative activity recorded in database yet.
             </div>
           )}
         </div>
