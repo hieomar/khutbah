@@ -42,7 +42,6 @@ export async function proxy(request: NextRequest) {
 
     // Check if user is authenticated and is an active admin
     const isAuthenticated = Boolean(session && user);
-    console.log("User: ", user);
     const isAdmin = user?.role === 'admin';
     const isActive = user?.status === 'active';
 
