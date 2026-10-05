@@ -89,6 +89,12 @@ function AdminLoginForm() {
         <div>
           <div className="flex items-center justify-between mb-1">
             <label className="text-xs font-semibold text-[#171717]">Password</label>
+            <Link
+              href="/auth/forgot-password"
+              className="text-[11px] text-accent-orange hover:underline font-medium"
+            >
+              Forgot password?
+            </Link>
           </div>
           <div className="relative">
             <Lock className="w-4 h-4 text-secondary absolute left-3.5 top-1/2 -translate-y-1/2" />

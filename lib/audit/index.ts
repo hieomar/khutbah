@@ -15,7 +15,9 @@ export type AuditActionType =
   | 'media.deleted'
   | 'invitation.created'
   | 'invitation.revoked'
-  | 'invitation.resent';
+  | 'invitation.resent'
+  | 'invitation.accepted'
+  | 'user.password_reset_completed';
 
 export interface RecordAuditParams {
   actor: {

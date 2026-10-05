@@ -5,6 +5,7 @@ import { db } from '../db';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import * as schema from '../db/schema';
 import { getUserById, AdminUserData } from '../db/store';
+import { sendPasswordResetEmail } from '../email';
 
 export const auth = betterAuth({
   database: db ? drizzleAdapter(db, { provider: 'pg', schema }) : undefined,
@@ -12,6 +13,22 @@ export const auth = betterAuth({
     enabled: true,
     autoSignIn: true,
     minPasswordLength: 8,
+    sendResetPassword: async ({ user, url, token }) => {
+      const baseUrl =
+        process.env.NEXT_PUBLIC_APP_URL ||
+        process.env.BETTER_AUTH_URL ||
+        'http://localhost:3000';
+      const resetUrl = url.includes('/auth/reset-password')
+        ? url
+        : `${baseUrl}/auth/reset-password?token=${token}`;
+
+      await sendPasswordResetEmail({
+        recipientEmail: user.email,
+        userName: user.name,
+        resetUrl,
+        expiresInMinutes: 60,
+      });
+    },
   },
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days

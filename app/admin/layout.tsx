@@ -4,6 +4,8 @@ import AdminLayoutClient from './AdminLayoutClient';
 import Link from 'next/link';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Admin Dashboard | Khutbah Malawi',
   description: 'Secure Administrative and Content Management Portal for Khutbah Malawi',

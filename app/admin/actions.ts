@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { requirePermission, requireAdmin } from '../../lib/auth/session';
+import { requirePermission } from '../../lib/auth/session';
 import {
   createUser,
   updateUser,
@@ -18,9 +18,12 @@ import {
   getUserById,
   getMediaById,
 } from '../../lib/db/store';
-import { recordAuditEvent, AuditActionType } from '../../lib/audit';
+import { recordAuditEvent } from '../../lib/audit';
 import { PermissionId } from '../../lib/auth/permissions';
 import { StorageService } from '../../lib/storage';
+import { sendInvitationEmail } from '../../lib/email';
+import { auth } from '../../lib/auth/auth';
+import { headers } from 'next/headers';
 
 // ==========================================
 // 1. Zod Validation Schemas
@@ -181,6 +184,22 @@ export async function initiatePasswordResetAction(userId: string) {
     const targetUser = await getUserById(userId);
     if (!targetUser) throw new Error('User not found');
 
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.BETTER_AUTH_URL ||
+      'http://localhost:3000';
+    const redirectTo = `${appUrl}/auth/reset-password`;
+
+    // Trigger Better Auth's password reset flow which generates a secure token and calls our sendResetPassword handler (via Resend)
+    const reqHeaders = await headers();
+    await auth.api.requestPasswordReset({
+      body: {
+        email: targetUser.email,
+        redirectTo,
+      },
+      headers: reqHeaders,
+    });
+
     await recordAuditEvent({
       actor: admin,
       action: 'user.password_reset_initiated',
@@ -264,6 +283,23 @@ export async function inviteUserAction(formData: unknown) {
       message: parsed.message,
     });
 
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.BETTER_AUTH_URL ||
+      'http://localhost:3000';
+    const inviteUrl = `${appUrl}/auth/accept-invite?token=${newInv.token}`;
+
+    // Send invitation email via Resend
+    await sendInvitationEmail({
+      recipientEmail: newInv.email,
+      inviterName: admin.name,
+      role: newInv.role,
+      permissions: newInv.permissions,
+      inviteUrl,
+      message: newInv.message,
+      expiresAt: newInv.expiresAt,
+    });
+
     await recordAuditEvent({
       actor: admin,
       action: 'invitation.created',
@@ -303,6 +339,23 @@ export async function resendInvitationAction(invitationId: string) {
   try {
     const admin = await requirePermission('users.invite');
     const resent = await resendInvitation(invitationId);
+
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.BETTER_AUTH_URL ||
+      'http://localhost:3000';
+    const inviteUrl = `${appUrl}/auth/accept-invite?token=${resent.token}`;
+
+    // Send refreshed invitation email via Resend
+    await sendInvitationEmail({
+      recipientEmail: resent.email,
+      inviterName: admin.name,
+      role: resent.role,
+      permissions: resent.permissions,
+      inviteUrl,
+      message: resent.message,
+      expiresAt: resent.expiresAt,
+    });
 
     await recordAuditEvent({
       actor: admin,

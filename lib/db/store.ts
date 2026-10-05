@@ -867,6 +867,134 @@ export async function resendInvitation(id: string): Promise<InvitationData> {
   };
 }
 
+export async function getInvitationByToken(token: string): Promise<InvitationData | null> {
+  const [inv] = await db
+    .select()
+    .from(schema.invitation)
+    .where(eq(schema.invitation.token, token))
+    .limit(1);
+
+  if (!inv) return null;
+
+  return {
+    id: inv.id,
+    email: inv.email,
+    role: inv.role as 'admin' | 'listener',
+    permissions: (inv.permissions as PermissionId[]) || [],
+    invitedBy: inv.invitedBy,
+    token: inv.token,
+    expiresAt: inv.expiresAt,
+    status: inv.status as 'pending' | 'accepted' | 'expired' | 'revoked',
+    acceptedAt: inv.acceptedAt,
+    revokedAt: inv.revokedAt,
+    message: inv.message,
+    createdAt: inv.createdAt,
+  };
+}
+
+export async function getInvitationById(id: string): Promise<InvitationData | null> {
+  const [inv] = await db
+    .select()
+    .from(schema.invitation)
+    .where(eq(schema.invitation.id, id))
+    .limit(1);
+
+  if (!inv) return null;
+
+  return {
+    id: inv.id,
+    email: inv.email,
+    role: inv.role as 'admin' | 'listener',
+    permissions: (inv.permissions as PermissionId[]) || [],
+    invitedBy: inv.invitedBy,
+    token: inv.token,
+    expiresAt: inv.expiresAt,
+    status: inv.status as 'pending' | 'accepted' | 'expired' | 'revoked',
+    acceptedAt: inv.acceptedAt,
+    revokedAt: inv.revokedAt,
+    message: inv.message,
+    createdAt: inv.createdAt,
+  };
+}
+
+export async function acceptInvitation(
+  token: string,
+  data: { name: string; userId?: string }
+): Promise<{ invitation: InvitationData; user: AdminUserData }> {
+  const invitation = await getInvitationByToken(token);
+  if (!invitation) {
+    throw new Error('Invalid or expired invitation token');
+  }
+
+  if (invitation.status !== 'pending') {
+    throw new Error(`This invitation has already been ${invitation.status}`);
+  }
+
+  if (new Date() > new Date(invitation.expiresAt)) {
+    await db
+      .update(schema.invitation)
+      .set({ status: 'expired' })
+      .where(eq(schema.invitation.id, invitation.id));
+    throw new Error('This invitation has expired. Please ask an administrator to resend it.');
+  }
+
+  // Check if user exists
+  let targetUser = await getUserByEmail(invitation.email);
+
+  if (!targetUser) {
+    // Create the user
+    targetUser = await createUser({
+      name: data.name,
+      email: invitation.email,
+      role: invitation.role,
+      status: 'active',
+      permissions: invitation.permissions,
+      grantedBy: invitation.invitedBy,
+    });
+  } else {
+    // Update user status to active and assign role/permissions
+    await updateUser(targetUser.id, {
+      name: data.name || targetUser.name,
+      role: invitation.role,
+      status: 'active',
+    });
+
+    if (invitation.role === 'admin' && invitation.permissions.length > 0) {
+      await setUserPermissions(targetUser.id, invitation.permissions);
+    }
+
+    targetUser = (await getUserById(targetUser.id))!;
+  }
+
+  // Mark invitation as accepted
+  const now = new Date();
+  const [updatedInv] = await db
+    .update(schema.invitation)
+    .set({
+      status: 'accepted',
+      acceptedAt: now,
+    })
+    .where(eq(schema.invitation.id, invitation.id))
+    .returning();
+
+  const acceptedInvitation: InvitationData = {
+    id: updatedInv.id,
+    email: updatedInv.email,
+    role: updatedInv.role as 'admin' | 'listener',
+    permissions: (updatedInv.permissions as PermissionId[]) || [],
+    invitedBy: updatedInv.invitedBy,
+    token: updatedInv.token,
+    expiresAt: updatedInv.expiresAt,
+    status: 'accepted',
+    acceptedAt: updatedInv.acceptedAt,
+    revokedAt: updatedInv.revokedAt,
+    message: updatedInv.message,
+    createdAt: updatedInv.createdAt,
+  };
+
+  return { invitation: acceptedInvitation, user: targetUser };
+}
+
 // =========================================================================
 // Audit Log Data Operations
 // =========================================================================

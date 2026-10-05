@@ -34,7 +34,7 @@ export type AdminSSEPayload =
 
 // Global singleton EventEmitter to ensure it persists across hot reloads in Next.js
 declare global {
-  // eslint-disable-next-line no-var
+   
   var __adminEventEmitter: EventEmitter | undefined;
 }
 
