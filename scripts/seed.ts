@@ -94,8 +94,6 @@ const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL!;
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD!;
 const ADMIN_NAME = process.env.SEED_ADMIN_NAME ?? "System Administrator";
 
-console.log("email", ADMIN_EMAIL);
-console.log("password", ADMIN_PASSWORD)
 async function seed() {
   console.log("🌱 Starting database seed...");
 
