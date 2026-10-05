@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
@@ -13,10 +13,12 @@ import {
   LogOut,
   ExternalLink,
   ChevronRight,
+  Loader2,
 } from 'lucide-react';
 import Logo from '../Logo';
 import { AdminUserData } from '../../lib/db/store';
 import { hasPermission } from '../../lib/auth/permissions';
+import { signOut } from '../../lib/auth/auth-client';
 
 interface AdminSidebarProps {
   currentUser: AdminUserData;
@@ -26,6 +28,24 @@ interface AdminSidebarProps {
 
 export default function AdminSidebar({ currentUser, isOpen, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+
+    try {
+      await signOut();
+      router.push('/auth/admin/login');
+      router.refresh();
+    } catch (error) {
+      console.error('Logout failed:', error);
+      router.push('/auth/admin/login');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const navItems = [
     {
@@ -155,9 +175,9 @@ export default function AdminSidebar({ currentUser, isOpen, onClose }: AdminSide
           </div>
         </div>
 
-        {/* Signed-in Administrator Profile Footer */}
-        <div className="p-4 border-t border-black/8 bg-black/2">
-          <div className="flex items-center justify-between gap-2 mb-3">
+        {/* Signed-in Administrator Profile Footer & Logout */}
+        <div className="p-4 border-t border-black/8 bg-black/2 space-y-3">
+          <div className="flex items-center justify-between gap-2">
             <div className="truncate pr-1">
               <p className="text-xs font-semibold text-[#171717] truncate">{currentUser.name}</p>
               <p className="text-[10px] text-secondary truncate">{currentUser.email}</p>
@@ -171,14 +191,20 @@ export default function AdminSidebar({ currentUser, isOpen, onClose }: AdminSide
             <span className="text-[10px] font-mono">
               {currentUser.permissions.length} perms active
             </span>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1 text-secondary hover:text-[#171717] transition-colors"
-              title="Return to site"
+
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-rose-700 hover:text-rose-900 hover:bg-rose-50 transition-colors cursor-pointer disabled:opacity-50"
+              title="Sign out of administrator session"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Exit</span>
-            </Link>
+              {isLoggingOut ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <LogOut className="w-3.5 h-3.5" />
+              )}
+              <span>{isLoggingOut ? 'Signing out...' : 'Sign Out'}</span>
+            </button>
           </div>
         </div>
       </aside>
