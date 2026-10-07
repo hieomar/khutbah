@@ -20,6 +20,7 @@ import { MediaItemData, AdminUserData } from '../../../lib/db/store';
 import { archiveMediaAction, restoreMediaAction, deleteMediaAction } from '../actions';
 import { hasPermission } from '../../../lib/auth/permissions';
 import { CATEGORIES } from '../../../data/contentData';
+import MediaReviewModal from './MediaReviewModal';
 
 interface MediaClientProps {
   initialMedia: MediaItemData[];
@@ -70,6 +71,9 @@ export default function MediaClient({ initialMedia, currentUser }: MediaClientPr
 
     if (res.success && res.media) {
       setMediaList(mediaList.map((m) => (m.id === item.id ? res.media : m)));
+      if (previewMedia?.id === item.id) {
+        setPreviewMedia(res.media);
+      }
       setMessage({
         type: 'success',
         text: `Archived "${item.title}". It has been hidden from public discovery.`,
@@ -88,6 +92,9 @@ export default function MediaClient({ initialMedia, currentUser }: MediaClientPr
 
     if (res.success && res.media) {
       setMediaList(mediaList.map((m) => (m.id === item.id ? res.media : m)));
+      if (previewMedia?.id === item.id) {
+        setPreviewMedia(res.media);
+      }
       setMessage({
         type: 'success',
         text: `Restored "${item.title}" to the active public catalog.`,
@@ -414,75 +421,15 @@ export default function MediaClient({ initialMedia, currentUser }: MediaClientPr
         )}
       </div>
 
-      {/* 1. Modal: Media Preview */}
-      {previewMedia && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-surface rounded-3xl border border-black/10 shadow-2xl p-6 sm:p-8 max-w-xl w-full max-h-[90vh] overflow-y-auto space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-black/8">
-              <h3 className="font-serif-heading text-2xl font-medium text-[#171717]">
-                Media Preview
-              </h3>
-              <button
-                onClick={() => setPreviewMedia(null)}
-                className="p-1.5 rounded-full hover:bg-black/5"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <div className="p-4 rounded-2xl bg-white border border-black/5">
-                <span className="text-[10px] uppercase tracking-wider font-bold text-accent-orange block mb-1">
-                  {previewMedia.categoryLabel}
-                </span>
-                <h4 className="font-serif-heading text-xl text-[#171717] font-medium mb-1">
-                  {previewMedia.title}
-                </h4>
-                <p className="text-xs text-secondary">
-                  {previewMedia.speaker} • {previewMedia.location} ({previewMedia.district})
-                </p>
-              </div>
-
-              {/* Player UI representation */}
-              <div className="p-4 rounded-2xl bg-[#171717] text-white flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                    {previewMedia.mediaType === 'audio' ? (
-                      <Volume2 className="w-5 h-5 text-accent-gold" />
-                    ) : (
-                      <Video className="w-5 h-5 text-accent-orange" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-white truncate max-w-50">
-                      {previewMedia.title}
-                    </p>
-                    <p className="text-[10px] text-white/60 font-mono">{previewMedia.duration}</p>
-                  </div>
-                </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/10 text-white/80">
-                  Ready to stream
-                </span>
-              </div>
-
-              {/* Storage references */}
-              <div className="p-3 bg-black/4 rounded-xl text-[11px] font-mono text-secondary space-y-1">
-                <div>Storage Key: {previewMedia.storageKey}</div>
-                <div>Language: {previewMedia.language}</div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-black/8 flex justify-end">
-              <button
-                onClick={() => setPreviewMedia(null)}
-                className="px-4 py-2 rounded-xl bg-[#171717] text-white text-xs font-medium"
-              >
-                Close Preview
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 1. Modal: Media Review & Playback */}
+      <MediaReviewModal
+        media={previewMedia}
+        onClose={() => setPreviewMedia(null)}
+        canUpdate={canUpdate}
+        canArchive={canArchive}
+        onArchive={handleArchive}
+        onRestore={handleRestore}
+      />
 
       {/* 2. Modal: Confirm Delete */}
       {deletingMedia && (

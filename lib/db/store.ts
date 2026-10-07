@@ -3,6 +3,7 @@ import { db } from './index';
 import * as schema from './schema';
 import { PermissionId, ALL_PERMISSION_IDS } from '../auth/permissions';
 import { broadcastStatsUpdate, broadcastAuditLog } from '../events/admin-events';
+import { StorageService } from '../storage';
 
 export interface AdminUserData {
   id: string;
@@ -25,27 +26,41 @@ export interface MediaItemData {
   speakerTitle: string;
   categoryId: string;
   categoryLabel: string;
+
   mediaType: 'audio' | 'video';
+
   duration: string;
   durationSeconds: number;
+
+  // Permanent Neon Object Storage identifiers
   storageKey: string;
-  storageUrl: string;
   thumbnailKey?: string | null;
-  thumbnailUrl?: string | null;
+
   fileSize?: number;
   mimeType: string;
+
   location: string;
   district: string;
   language: string;
+
   tags: string[];
   keyTakeaways: string[];
+
   status: 'published' | 'draft' | 'archived';
   isFeatured: boolean;
+
   createdBy: string;
   updatedBy?: string | null;
+
   archivedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface MediaPlaybackData {
+  mediaUrl: string;
+  thumbnailUrl: string | null;
+  expiresAt: Date;
 }
 
 export interface InvitationData {
@@ -369,6 +384,128 @@ export async function isLastAdminWithPermission(
   return adminsWithPerm.length === 1 && adminsWithPerm[0].id === userId;
 }
 
+// =========================================================================
+// Media Row Helper
+//
+// Maps a database row to MediaItemData.
+//
+// IMPORTANT:
+// This function does NOT generate signed URLs.
+// Signed URLs are generated only by getMediaPlayback().
+// =========================================================================
+
+function mapMediaRowToData(
+  m: typeof schema.media.$inferSelect
+): MediaItemData {
+  return {
+    id: m.id,
+    title: m.title,
+    description: m.description,
+
+    speaker: m.speaker,
+    speakerTitle: m.speakerTitle,
+
+    categoryId: m.categoryId,
+    categoryLabel: m.categoryLabel,
+
+    mediaType: m.mediaType as 'audio' | 'video',
+
+    duration: m.duration,
+    durationSeconds: m.durationSeconds,
+
+    // Permanent Object Storage identifiers
+    storageKey: m.storageKey,
+    thumbnailKey: m.thumbnailKey,
+
+    fileSize: m.fileSize ?? 0,
+    mimeType: m.mimeType,
+
+    location: m.location,
+    district: m.district,
+    language: m.language,
+
+    tags: (m.tags as string[]) || [],
+    keyTakeaways: (m.keyTakeaways as string[]) || [],
+
+    status: m.status as 'published' | 'draft' | 'archived',
+
+    isFeatured: m.isFeatured,
+
+    createdBy: m.createdBy,
+    updatedBy: m.updatedBy,
+
+    archivedAt: m.archivedAt,
+
+    createdAt: m.createdAt,
+    updatedAt: m.updatedAt,
+  };
+}
+
+// =========================================================================
+// Get Media Playback URLs
+//
+// Generates temporary presigned URLs only when playback is requested.
+//
+// IMPORTANT:
+// These URLs should never be stored in PostgreSQL.
+// =========================================================================
+
+export async function getMediaPlayback(
+  id: string
+): Promise<MediaPlaybackData | null> {
+  const [media] = await db
+    .select({
+      id: schema.media.id,
+      storageKey: schema.media.storageKey,
+      thumbnailKey: schema.media.thumbnailKey,
+    })
+    .from(schema.media)
+    .where(eq(schema.media.id, id))
+    .limit(1);
+
+  if (!media) {
+    return null;
+  }
+
+  if (!media.storageKey) {
+    throw new Error('Media storage key is missing');
+  }
+
+  /*
+   * Signed URLs are intentionally short-lived.
+   *
+   * 1 hour is reasonable for normal audio/video playback.
+   */
+  const expiresIn = 60 * 60;
+
+  const mediaUrl = await StorageService.getSignedViewUrl(
+    media.storageKey,
+    expiresIn
+  );
+
+  let thumbnailUrl: string | null = null;
+
+  if (media.thumbnailKey) {
+    thumbnailUrl = await StorageService.getSignedViewUrl(
+      media.thumbnailKey,
+      expiresIn
+    );
+  }
+
+  return {
+    mediaUrl,
+    thumbnailUrl,
+
+    expiresAt: new Date(
+      Date.now() + expiresIn * 1000
+    ),
+  };
+}
+
+// =========================================================================
+// List Media
+// =========================================================================
+
 export async function listMedia(params?: {
   status?: 'published' | 'draft' | 'archived';
   mediaType?: 'audio' | 'video';
@@ -377,23 +514,47 @@ export async function listMedia(params?: {
   search?: string;
   limit?: number;
   offset?: number;
-}): Promise<{ media: MediaItemData[]; total: number }> {
+}): Promise<{
+  media: MediaItemData[];
+  total: number;
+}> {
   const conditions = [];
 
+  // -----------------------------------------------------------------------
+  // Filters
+  // -----------------------------------------------------------------------
+
   if (params?.status) {
-    conditions.push(eq(schema.media.status, params.status));
+    conditions.push(
+      eq(schema.media.status, params.status)
+    );
   }
+
   if (params?.mediaType) {
-    conditions.push(eq(schema.media.mediaType, params.mediaType));
+    conditions.push(
+      eq(schema.media.mediaType, params.mediaType)
+    );
   }
+
   if (params?.categoryId) {
-    conditions.push(eq(schema.media.categoryId, params.categoryId));
+    conditions.push(
+      eq(schema.media.categoryId, params.categoryId)
+    );
   }
+
   if (params?.district) {
-    conditions.push(eq(schema.media.district, params.district));
+    conditions.push(
+      eq(schema.media.district, params.district)
+    );
   }
+
+  // -----------------------------------------------------------------------
+  // Search
+  // -----------------------------------------------------------------------
+
   if (params?.search) {
     const q = `%${params.search.toLowerCase()}%`;
+
     conditions.push(
       or(
         ilike(schema.media.title, q),
@@ -404,16 +565,37 @@ export async function listMedia(params?: {
     );
   }
 
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  const whereClause =
+    conditions.length > 0
+      ? and(...conditions)
+      : undefined;
+
+  // -----------------------------------------------------------------------
+  // Count
+  // -----------------------------------------------------------------------
 
   const [countRes] = await db
-    .select({ count: count() })
+    .select({
+      count: count(),
+    })
     .from(schema.media)
     .where(whereClause);
 
   const total = Number(countRes?.count || 0);
-  const limit = params?.limit || 20;
-  const offset = params?.offset || 0;
+
+  // -----------------------------------------------------------------------
+  // Pagination
+  // -----------------------------------------------------------------------
+
+  const limit = params?.limit ?? 20;
+  const offset = params?.offset ?? 0;
+
+  // -----------------------------------------------------------------------
+  // Fetch media
+  //
+  // IMPORTANT:
+  // No signed URLs are generated here.
+  // -----------------------------------------------------------------------
 
   const rows = await db
     .select()
@@ -423,151 +605,109 @@ export async function listMedia(params?: {
     .limit(limit)
     .offset(offset);
 
-  const mediaList: MediaItemData[] = rows.map((m) => ({
-    id: m.id,
-    title: m.title,
-    description: m.description,
-    speaker: m.speaker,
-    speakerTitle: m.speakerTitle,
-    categoryId: m.categoryId,
-    categoryLabel: m.categoryLabel,
-    mediaType: m.mediaType as 'audio' | 'video',
-    duration: m.duration,
-    durationSeconds: m.durationSeconds,
-    storageKey: m.storageKey,
-    storageUrl: m.storageUrl,
-    thumbnailKey: m.thumbnailKey,
-    thumbnailUrl: m.thumbnailUrl,
-    fileSize: m.fileSize ?? 0,
-    mimeType: m.mimeType,
-    location: m.location,
-    district: m.district,
-    language: m.language,
-    tags: (m.tags as string[]) || [],
-    keyTakeaways: (m.keyTakeaways as string[]) || [],
-    status: m.status as 'published' | 'draft' | 'archived',
-    isFeatured: m.isFeatured,
-    createdBy: m.createdBy,
-    updatedBy: m.updatedBy,
-    archivedAt: m.archivedAt,
-    createdAt: m.createdAt,
-    updatedAt: m.updatedAt,
-  }));
+  const mediaList = rows.map(mapMediaRowToData);
 
-  return { media: mediaList, total };
+  return {
+    media: mediaList,
+    total,
+  };
 }
 
-export async function getMediaById(id: string): Promise<MediaItemData | null> {
+// =========================================================================
+// Get Media By ID
+//
+// Returns metadata only.
+// Does NOT generate a signed playback URL.
+// =========================================================================
+
+export async function getMediaById(
+  id: string
+): Promise<MediaItemData | null> {
   const [m] = await db
     .select()
     .from(schema.media)
     .where(eq(schema.media.id, id))
     .limit(1);
 
-  if (!m) return null;
+  if (!m) {
+    return null;
+  }
 
-  return {
-    id: m.id,
-    title: m.title,
-    description: m.description,
-    speaker: m.speaker,
-    speakerTitle: m.speakerTitle,
-    categoryId: m.categoryId,
-    categoryLabel: m.categoryLabel,
-    mediaType: m.mediaType as 'audio' | 'video',
-    duration: m.duration,
-    durationSeconds: m.durationSeconds,
-    storageKey: m.storageKey,
-    storageUrl: m.storageUrl,
-    thumbnailKey: m.thumbnailKey,
-    thumbnailUrl: m.thumbnailUrl,
-    fileSize: m.fileSize ?? 0,
-    mimeType: m.mimeType,
-    location: m.location,
-    district: m.district,
-    language: m.language,
-    tags: (m.tags as string[]) || [],
-    keyTakeaways: (m.keyTakeaways as string[]) || [],
-    status: m.status as 'published' | 'draft' | 'archived',
-    isFeatured: m.isFeatured,
-    createdBy: m.createdBy,
-    updatedBy: m.updatedBy,
-    archivedAt: m.archivedAt,
-    createdAt: m.createdAt,
-    updatedAt: m.updatedAt,
-  };
+  return mapMediaRowToData(m);
 }
 
+// =========================================================================
+// Create Media
+//
+// storageKey and thumbnailKey are permanent Object Storage identifiers.
+// mediaUrl/thumbnailUrl are NOT accepted here.
+// =========================================================================
+
 export async function createMedia(
-  data: Omit<MediaItemData, 'id' | 'createdAt' | 'updatedAt'>
+  data: Omit<
+    MediaItemData,
+    | 'id'
+    | 'createdAt'
+    | 'updatedAt'
+  >
 ): Promise<MediaItemData> {
-  const id = `media-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+  const id = `media-${Date.now()}-${Math.random()
+    .toString(36)
+    .substring(2, 7)}`;
+
   const now = new Date();
 
   const [created] = await db
     .insert(schema.media)
     .values({
       id,
+
       title: data.title,
       description: data.description,
+
       speaker: data.speaker,
       speakerTitle: data.speakerTitle,
+
       categoryId: data.categoryId,
       categoryLabel: data.categoryLabel,
+
       mediaType: data.mediaType,
+
       duration: data.duration,
       durationSeconds: data.durationSeconds,
+
+      // Permanent Object Storage identifiers
       storageKey: data.storageKey,
-      storageUrl: data.storageUrl,
       thumbnailKey: data.thumbnailKey || null,
-      thumbnailUrl: data.thumbnailUrl || null,
+
       fileSize: data.fileSize || 0,
       mimeType: data.mimeType,
+
       location: data.location,
       district: data.district,
       language: data.language,
+
       tags: data.tags || [],
       keyTakeaways: data.keyTakeaways || [],
+
       status: data.status || 'published',
       isFeatured: data.isFeatured || false,
+
       createdBy: data.createdBy,
       updatedBy: data.updatedBy || null,
+
       archivedAt: data.archivedAt || null,
+
       createdAt: now,
       updatedAt: now,
     })
     .returning();
 
-  const result: MediaItemData = {
-    id: created.id,
-    title: created.title,
-    description: created.description,
-    speaker: created.speaker,
-    speakerTitle: created.speakerTitle,
-    categoryId: created.categoryId,
-    categoryLabel: created.categoryLabel,
-    mediaType: created.mediaType as 'audio' | 'video',
-    duration: created.duration,
-    durationSeconds: created.durationSeconds,
-    storageKey: created.storageKey,
-    storageUrl: created.storageUrl,
-    thumbnailKey: created.thumbnailKey,
-    thumbnailUrl: created.thumbnailUrl,
-    fileSize: created.fileSize ?? 0,
-    mimeType: created.mimeType,
-    location: created.location,
-    district: created.district,
-    language: created.language,
-    tags: (created.tags as string[]) || [],
-    keyTakeaways: (created.keyTakeaways as string[]) || [],
-    status: created.status as 'published' | 'draft' | 'archived',
-    isFeatured: created.isFeatured,
-    createdBy: created.createdBy,
-    updatedBy: created.updatedBy,
-    archivedAt: created.archivedAt,
-    createdAt: created.createdAt,
-    updatedAt: created.updatedAt,
-  };
+  if (!created) {
+    throw new Error('Failed to create media item');
+  }
+
+  const result = mapMediaRowToData(created);
 
   const currentStats = await getDashboardStats();
   broadcastStatsUpdate(currentStats);
@@ -575,9 +715,25 @@ export async function createMedia(
   return result;
 }
 
+// =========================================================================
+// Update Media
+//
+// Only database fields are accepted.
+// mediaUrl and thumbnailUrl cannot be passed to this function.
+// =========================================================================
+
+export type MediaUpdateData = Partial<
+  Omit<
+    MediaItemData,
+    | 'id'
+    | 'createdAt'
+    | 'createdBy'
+  >
+>;
+
 export async function updateMedia(
   id: string,
-  updates: Partial<Omit<MediaItemData, 'id' | 'createdAt' | 'createdBy'>>
+  updates: MediaUpdateData
 ): Promise<MediaItemData> {
   const now = new Date();
 
@@ -594,36 +750,7 @@ export async function updateMedia(
     throw new Error('Media item not found');
   }
 
-  const result: MediaItemData = {
-    id: updated.id,
-    title: updated.title,
-    description: updated.description,
-    speaker: updated.speaker,
-    speakerTitle: updated.speakerTitle,
-    categoryId: updated.categoryId,
-    categoryLabel: updated.categoryLabel,
-    mediaType: updated.mediaType as 'audio' | 'video',
-    duration: updated.duration,
-    durationSeconds: updated.durationSeconds,
-    storageKey: updated.storageKey,
-    storageUrl: updated.storageUrl,
-    thumbnailKey: updated.thumbnailKey,
-    thumbnailUrl: updated.thumbnailUrl,
-    fileSize: updated.fileSize ?? 0,
-    mimeType: updated.mimeType,
-    location: updated.location,
-    district: updated.district,
-    language: updated.language,
-    tags: (updated.tags as string[]) || [],
-    keyTakeaways: (updated.keyTakeaways as string[]) || [],
-    status: updated.status as 'published' | 'draft' | 'archived',
-    isFeatured: updated.isFeatured,
-    createdBy: updated.createdBy,
-    updatedBy: updated.updatedBy,
-    archivedAt: updated.archivedAt,
-    createdAt: updated.createdAt,
-    updatedAt: updated.updatedAt,
-  };
+  const result = mapMediaRowToData(updated);
 
   const currentStats = await getDashboardStats();
   broadcastStatsUpdate(currentStats);
@@ -631,7 +758,13 @@ export async function updateMedia(
   return result;
 }
 
-export async function archiveMedia(id: string): Promise<MediaItemData> {
+// =========================================================================
+// Archive Media
+// =========================================================================
+
+export async function archiveMedia(
+  id: string
+): Promise<MediaItemData> {
   const now = new Date();
 
   const [archived] = await db
@@ -644,44 +777,23 @@ export async function archiveMedia(id: string): Promise<MediaItemData> {
     .where(eq(schema.media.id, id))
     .returning();
 
-  if (!archived) throw new Error('Media item not found');
+  if (!archived) {
+    throw new Error('Media item not found');
+  }
 
   const currentStats = await getDashboardStats();
   broadcastStatsUpdate(currentStats);
 
-  return {
-    id: archived.id,
-    title: archived.title,
-    description: archived.description,
-    speaker: archived.speaker,
-    speakerTitle: archived.speakerTitle,
-    categoryId: archived.categoryId,
-    categoryLabel: archived.categoryLabel,
-    mediaType: archived.mediaType as 'audio' | 'video',
-    duration: archived.duration,
-    durationSeconds: archived.durationSeconds,
-    storageKey: archived.storageKey,
-    storageUrl: archived.storageUrl,
-    thumbnailKey: archived.thumbnailKey,
-    thumbnailUrl: archived.thumbnailUrl,
-    fileSize: archived.fileSize ?? 0,
-    mimeType: archived.mimeType,
-    location: archived.location,
-    district: archived.district,
-    language: archived.language,
-    tags: (archived.tags as string[]) || [],
-    keyTakeaways: (archived.keyTakeaways as string[]) || [],
-    status: 'archived',
-    isFeatured: archived.isFeatured,
-    createdBy: archived.createdBy,
-    updatedBy: archived.updatedBy,
-    archivedAt: archived.archivedAt,
-    createdAt: archived.createdAt,
-    updatedAt: archived.updatedAt,
-  };
+  return mapMediaRowToData(archived);
 }
 
-export async function restoreMedia(id: string): Promise<MediaItemData> {
+// =========================================================================
+// Restore Media
+// =========================================================================
+
+export async function restoreMedia(
+  id: string
+): Promise<MediaItemData> {
   const now = new Date();
 
   const [restored] = await db
@@ -694,45 +806,110 @@ export async function restoreMedia(id: string): Promise<MediaItemData> {
     .where(eq(schema.media.id, id))
     .returning();
 
-  if (!restored) throw new Error('Media item not found');
+  if (!restored) {
+    throw new Error('Media item not found');
+  }
 
   const currentStats = await getDashboardStats();
   broadcastStatsUpdate(currentStats);
 
-  return {
-    id: restored.id,
-    title: restored.title,
-    description: restored.description,
-    speaker: restored.speaker,
-    speakerTitle: restored.speakerTitle,
-    categoryId: restored.categoryId,
-    categoryLabel: restored.categoryLabel,
-    mediaType: restored.mediaType as 'audio' | 'video',
-    duration: restored.duration,
-    durationSeconds: restored.durationSeconds,
-    storageKey: restored.storageKey,
-    storageUrl: restored.storageUrl,
-    thumbnailKey: restored.thumbnailKey,
-    thumbnailUrl: restored.thumbnailUrl,
-    fileSize: restored.fileSize ?? 0,
-    mimeType: restored.mimeType,
-    location: restored.location,
-    district: restored.district,
-    language: restored.language,
-    tags: (restored.tags as string[]) || [],
-    keyTakeaways: (restored.keyTakeaways as string[]) || [],
-    status: 'published',
-    isFeatured: restored.isFeatured,
-    createdBy: restored.createdBy,
-    updatedBy: restored.updatedBy,
-    archivedAt: restored.archivedAt,
-    createdAt: restored.createdAt,
-    updatedAt: restored.updatedAt,
-  };
+  return mapMediaRowToData(restored);
 }
 
-export async function deleteMedia(id: string): Promise<void> {
-  await db.delete(schema.media).where(eq(schema.media.id, id));
+// =========================================================================
+// Delete Media
+//
+// Deletes the Object Storage objects first, then the database record.
+// =========================================================================
+
+export async function deleteMedia(
+  id: string
+): Promise<void> {
+  /*
+   * Only retrieve the fields required for deletion.
+   *
+   * We intentionally do not call getMediaById() because that function
+   * is for returning media metadata and we don't need anything else.
+   */
+  const [item] = await db
+    .select({
+      id: schema.media.id,
+      storageKey: schema.media.storageKey,
+      thumbnailKey: schema.media.thumbnailKey,
+    })
+    .from(schema.media)
+    .where(eq(schema.media.id, id))
+    .limit(1);
+
+  if (!item) {
+    throw new Error('Media item not found');
+  }
+
+  // -----------------------------------------------------------------------
+  // Delete main media object
+  // -----------------------------------------------------------------------
+
+  if (item.storageKey) {
+    try {
+      await StorageService.deleteFile(
+        item.storageKey
+      );
+    } catch (err) {
+      console.error(
+        `Failed to delete storage file "${item.storageKey}":`,
+        err
+      );
+
+      /*
+       * Stop here so that the database record isn't deleted while
+       * the actual object remains in storage.
+       */
+      throw new Error(
+        'Failed to delete media file from object storage'
+      );
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Delete thumbnail
+  // -----------------------------------------------------------------------
+
+  if (item.thumbnailKey) {
+    try {
+      await StorageService.deleteFile(
+        item.thumbnailKey
+      );
+    } catch (err) {
+      console.error(
+        `Failed to delete thumbnail file "${item.thumbnailKey}":`,
+        err
+      );
+
+      /*
+       * The main media object has already been deleted.
+       *
+       * We stop instead of pretending the whole operation succeeded.
+       * This leaves the database record intact, but the main media
+       * object has already been removed.
+       */
+      throw new Error(
+        'Failed to delete thumbnail from object storage'
+      );
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Delete database record
+  // -----------------------------------------------------------------------
+
+  await db
+    .delete(schema.media)
+    .where(eq(schema.media.id, id));
+
+  // -----------------------------------------------------------------------
+  // Broadcast updated dashboard statistics
+  // -----------------------------------------------------------------------
+
   const currentStats = await getDashboardStats();
   broadcastStatsUpdate(currentStats);
 }

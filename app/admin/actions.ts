@@ -389,8 +389,7 @@ export async function createMediaAction(formData: unknown) {
       parsed.mimeType
     );
 
-    let storedThumbUrl = null;
-    let storedThumbKey = null;
+    let storedThumbKey: string | null = null;
 
     if (parsed.thumbnailName) {
       const storedThumb = await StorageService.uploadFile(
@@ -399,7 +398,6 @@ export async function createMediaAction(formData: unknown) {
         1024 * 500, // sample thumb size
         'image/jpeg'
       );
-      storedThumbUrl = storedThumb.url;
       storedThumbKey = storedThumb.key;
     }
 
@@ -414,9 +412,7 @@ export async function createMediaAction(formData: unknown) {
       duration: parsed.duration,
       durationSeconds: parsed.durationSeconds,
       storageKey: storedMedia.key,
-      storageUrl: storedMedia.url,
       thumbnailKey: storedThumbKey,
-      thumbnailUrl: storedThumbUrl,
       fileSize: parsed.fileSize,
       mimeType: parsed.mimeType,
       location: parsed.location,

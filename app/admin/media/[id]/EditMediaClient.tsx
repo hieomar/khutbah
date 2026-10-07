@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Volume2, Video, AlertCircle } from 'lucide-react';
-import { MediaItemData } from '../../../../lib/db/store';
+import { MediaItemData } from '@/lib/db/store';
 import { updateMediaAction } from '../../actions';
-import { CATEGORIES } from '../../../../data/contentData';
+import { CATEGORIES } from '@/data/contentData';
 
 interface EditMediaClientProps {
   media: MediaItemData;
@@ -14,6 +14,48 @@ interface EditMediaClientProps {
 
 export default function EditMediaClient({ media }: EditMediaClientProps) {
   const router = useRouter();
+
+  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+  const [isLoadingMedia, setIsLoadingMedia] = useState(true);
+  const [mediaLoadError, setMediaLoadError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPlaybackUrl() {
+      try {
+        setIsLoadingMedia(true);
+        setMediaLoadError(false);
+
+        const response = await fetch(`/api/admin/media/${media.id}/playback`);
+        if (!response.ok) {
+          throw new Error('Failed to load media playback URL');
+        }
+
+        const data = await response.json();
+        if (!cancelled) {
+          setMediaUrl(data.mediaUrl);
+          setThumbnailUrl(data.thumbnailUrl ?? null);
+        }
+      } catch (err) {
+        console.error('Failed to load media playback URL:', err);
+        if (!cancelled) {
+          setMediaLoadError(true);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingMedia(false);
+        }
+      }
+    }
+
+    loadPlaybackUrl();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [media.id]);
 
   const [form, setForm] = useState({
     id: media.id,
@@ -102,9 +144,62 @@ export default function EditMediaClient({ media }: EditMediaClientProps) {
           <h2 className="font-serif-heading text-3xl font-medium text-[#171717]">
             Edit Media: {media.title}
           </h2>
-          <p className="text-xs text-secondary">Storage Reference: {media.storageKey}</p>
+          <p className="text-xs text-secondary">Storage Key: {media.storageKey}</p>
         </div>
       </div>
+
+      {/* Embedded Player for In-Context Review */}
+      {media.storageKey && (
+        <div className="p-5 rounded-2xl bg-white border border-black/8 shadow-2xs space-y-3">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-[#171717] flex items-center gap-1.5">
+              {media.mediaType === 'audio' ? (
+                <Volume2 className="w-4 h-4 text-accent-gold" />
+              ) : (
+                <Video className="w-4 h-4 text-accent-orange" />
+              )}
+              <span>In-Context Playback & Audio/Video Review</span>
+            </span>
+            <span className="font-mono text-[11px] text-secondary">
+              Duration: {media.duration}
+            </span>
+          </div>
+
+          {isLoadingMedia ? (
+            <div className="flex items-center justify-center h-32 text-xs text-secondary bg-surface rounded-xl border border-black/5">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-accent-orange animate-pulse" />
+                <span>Loading secure playback stream...</span>
+              </div>
+            </div>
+          ) : mediaUrl ? (
+            media.mediaType === 'audio' ? (
+              <div className="bg-[#171717] p-4 rounded-xl">
+                <audio controls src={mediaUrl ?? undefined} className="w-full" />
+              </div>
+            ) : (
+              <div className="rounded-xl overflow-hidden bg-black aspect-video max-h-80 mx-auto flex items-center justify-center">
+                <video
+                  controls
+                  src={mediaUrl ?? undefined}
+                  poster={thumbnailUrl ?? undefined}
+                  playsInline
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )
+          ) : (
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>
+                {mediaLoadError
+                  ? 'Unable to load media playback stream from object storage.'
+                  : 'No playback URL available.'}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       {error && (
         <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs flex items-center gap-2">

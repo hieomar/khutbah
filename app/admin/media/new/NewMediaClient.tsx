@@ -16,6 +16,8 @@ import { CATEGORIES } from '../../../../data/contentData';
 export default function NewMediaClient() {
   const router = useRouter();
 
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -57,6 +59,12 @@ export default function NewMediaClient() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (localPreviewUrl) {
+        URL.revokeObjectURL(localPreviewUrl);
+      }
+      const previewUrl = URL.createObjectURL(file);
+      setLocalPreviewUrl(previewUrl);
+
       setForm({
         ...form,
         fileName: file.name,
@@ -218,6 +226,34 @@ export default function NewMediaClient() {
               />
             </label>
           </div>
+
+          {/* Local Media Audio/Video Preview */}
+          {localPreviewUrl && (
+            <div className="p-4 rounded-2xl bg-surface border border-black/8 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-[#171717] flex items-center gap-1.5">
+                  {form.mediaType === 'audio' ? (
+                    <Volume2 className="w-4 h-4 text-accent-gold" />
+                  ) : (
+                    <Video className="w-4 h-4 text-accent-orange" />
+                  )}
+                  <span>Live Preview Selected Media</span>
+                </span>
+                <span className="font-mono text-[11px] text-secondary">
+                  {(form.fileSize / (1024 * 1024)).toFixed(1)} MB
+                </span>
+              </div>
+              {form.mediaType === 'audio' ? (
+                <audio controls src={localPreviewUrl} className="w-full" />
+              ) : (
+                <video
+                  controls
+                  src={localPreviewUrl}
+                  className="w-full aspect-video rounded-xl bg-black object-contain max-h-72"
+                />
+              )}
+            </div>
+          )}
 
           {/* Upload Progress Bar */}
           {uploadProgress !== null && (

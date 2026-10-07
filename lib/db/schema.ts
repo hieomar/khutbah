@@ -117,31 +117,45 @@ export const media = pgTable('media', {
   description: text('description').notNull(),
   speaker: text('speaker').notNull(),
   speakerTitle: text('speaker_title').notNull(),
-  categoryId: text('category_id').notNull(), // 'preachings' | 'khutbahs' | 'lectures' | 'recitations' | 'reminders'
+  categoryId: text('category_id').notNull(),
   categoryLabel: text('category_label').notNull(),
-  mediaType: text('media_type').notNull(), // 'audio' | 'video'
-  duration: text('duration').notNull(), // '28:40'
+  mediaType: text('media_type').notNull(),
+  duration: text('duration').notNull(),
   durationSeconds: integer('duration_seconds').notNull(),
+  // Permanent Neon Object Storage object key
   storageKey: text('storage_key').notNull(),
-  storageUrl: text('storage_url').notNull(),
   thumbnailKey: text('thumbnail_key'),
-  thumbnailUrl: text('thumbnail_url'),
-  fileSize: integer('file_size').default(0), // bytes
+  fileSize: integer('file_size').default(0),
   mimeType: text('mime_type').notNull(),
   location: text('location').notNull(),
   district: text('district').notNull(),
   language: text('language').notNull(),
-  tags: json('tags').$type<string[]>().default([]).notNull(),
-  keyTakeaways: json('key_takeaways').$type<string[]>().default([]).notNull(),
-  status: text('status').default('published').notNull(), // 'published' | 'draft' | 'archived'
-  isFeatured: boolean('is_featured').default(false).notNull(),
+  tags: json('tags')
+    .$type<string[]>()
+    .default([])
+    .notNull(),
+  keyTakeaways: json('key_takeaways')
+    .$type<string[]>()
+    .default([])
+    .notNull(),
+  status: text('status')
+    .default('published')
+    .notNull(),
+  isFeatured: boolean('is_featured')
+    .default(false)
+    .notNull(),
   createdBy: text('created_by')
     .notNull()
     .references(() => user.id),
-  updatedBy: text('updated_by').references(() => user.id),
+  updatedBy: text('updated_by')
+    .references(() => user.id),
   archivedAt: timestamp('archived_at'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at')
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .notNull(),
 });
 
 // ==========================================
