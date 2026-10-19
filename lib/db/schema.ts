@@ -1,10 +1,14 @@
+import { relations, sql } from 'drizzle-orm';
 import {
   pgTable,
   text,
   timestamp,
   boolean,
   integer,
-  json,
+  jsonb,
+  index,
+  uniqueIndex,
+  check,
 } from 'drizzle-orm/pg-core';
 
 // ==========================================
@@ -20,8 +24,17 @@ export const user = pgTable('user', {
   role: text('role').default('listener').notNull(), // 'admin' | 'listener'
   status: text('status').default('active').notNull(), // 'active' | 'suspended' | 'pending'
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => /* @__PURE__ */ new Date()).notNull(),
+},(table) => [
+    check(
+      'user_role_check',
+      sql`${table.role} IN ('admin', 'listener')`,
+    ),
+    check(
+      'user_status_check',
+      sql`${table.status} IN ('active', 'suspended', 'pending')`,
+    ),
+  ]);
 
 export const session = pgTable('session', {
   id: text('id').primaryKey(),
@@ -34,7 +47,9 @@ export const session = pgTable('session', {
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-});
+},
+  (table) => [index("session_userId_idx").on(table.userId)],
+);
 
 export const account = pgTable('account', {
   id: text('id').primaryKey(),
@@ -51,8 +66,13 @@ export const account = pgTable('account', {
   scope: text('scope'),
   password: text('password'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => /* @__PURE__ */ new Date()).notNull(),
+},(table) => [
+  uniqueIndex('account_provider_account_uidx').on(
+    table.providerId,
+    table.accountId,
+  ),]
+);
 
 export const verification = pgTable('verification', {
   id: text('id').primaryKey(),
@@ -60,8 +80,11 @@ export const verification = pgTable('verification', {
   value: text('value').notNull(),
   expiresAt: timestamp('expires_at').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => /* @__PURE__ */ new Date()).notNull(),
+},
+  (table) => [index("verification_identifier_idx").on(table.identifier)],
+);
+
 
 // ==========================================
 // 2. Granular Permissions & Admin Assignments
@@ -75,16 +98,24 @@ export const permission = pgTable('permission', {
 });
 
 export const adminPermission = pgTable('admin_permission', {
-  id: text('id').primaryKey(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  permissionId: text('permission_id')
-    .notNull()
-    .references(() => permission.id, { onDelete: 'cascade' }),
-  grantedBy: text('granted_by').references(() => user.id),
-  grantedAt: timestamp('granted_at').defaultNow().notNull(),
-});
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    permissionId: text('permission_id')
+      .notNull()
+      .references(() => permission.id, { onDelete: 'cascade' }),
+    grantedBy: text('granted_by').references(() => user.id),
+    grantedAt: timestamp('granted_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('admin_permission_user_permission_uidx').on(
+      table.userId,
+      table.permissionId,
+    ),
+  //   index('admin_permission_user_idx').on(table.userId),
+  ],
+);
 
 // ==========================================
 // 3. User & Administrator Invitations
@@ -94,7 +125,7 @@ export const invitation = pgTable('invitation', {
   id: text('id').primaryKey(),
   email: text('email').notNull(),
   role: text('role').default('listener').notNull(), // 'admin' | 'listener'
-  permissions: json('permissions').$type<string[]>().default([]).notNull(), // JSON array of permission ids
+  permissions: jsonb('permissions').$type<string[]>().default([]).notNull(), // jsonb array of permission ids
   invitedBy: text('invited_by')
     .notNull()
     .references(() => user.id),
@@ -108,7 +139,21 @@ export const invitation = pgTable('invitation', {
 });
 
 // ==========================================
-// 4. Media Management Table
+// 4. Media Upload Categories Table
+// ==========================================
+
+export const category = pgTable('category', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+// ==========================================
+// 5. Media Management Table
 // ==========================================
 
 export const media = pgTable('media', {
@@ -117,7 +162,10 @@ export const media = pgTable('media', {
   description: text('description').notNull(),
   speaker: text('speaker').notNull(),
   speakerTitle: text('speaker_title').notNull(),
-  categoryId: text('category_id').notNull(),
+  categoryId: text('category_id')
+    .notNull()
+    .references(() => category.id, { onDelete: 'restrict' }),
+
   categoryLabel: text('category_label').notNull(),
   mediaType: text('media_type').notNull(),
   duration: text('duration').notNull(),
@@ -125,16 +173,16 @@ export const media = pgTable('media', {
   // Permanent Neon Object Storage object key
   storageKey: text('storage_key').notNull(),
   thumbnailKey: text('thumbnail_key'),
-  fileSize: integer('file_size').default(0),
+  fileSize: integer('file_size').default(0).notNull(),
   mimeType: text('mime_type').notNull(),
   location: text('location').notNull(),
   district: text('district').notNull(),
   language: text('language').notNull(),
-  tags: json('tags')
+  tags: jsonb('tags')
     .$type<string[]>()
     .default([])
     .notNull(),
-  keyTakeaways: json('key_takeaways')
+  keyTakeaways: jsonb('key_takeaways')
     .$type<string[]>()
     .default([])
     .notNull(),
@@ -156,10 +204,24 @@ export const media = pgTable('media', {
   updatedAt: timestamp('updated_at')
     .defaultNow()
     .notNull(),
-});
+},(table) => [
+    check(
+      'media_duration_seconds_check',
+      sql`${table.durationSeconds} >= 0`,
+    ),
+    check(
+      'media_file_size_check',
+      sql`${table.fileSize} >= 0`,
+    ),
+    check(
+      'media_status_check',
+      sql`${table.status} IN ('published', 'draft', 'archived')`,
+    ),
+]
+);
 
 // ==========================================
-// 5. Audit Log Table
+// 6. Audit Log Table
 // ==========================================
 
 export const auditLog = pgTable('audit_log', {
@@ -171,8 +233,39 @@ export const auditLog = pgTable('audit_log', {
   targetType: text('target_type').notNull(), // 'user' | 'admin' | 'media' | 'invitation'
   targetId: text('target_id').notNull(),
   targetSummary: text('target_summary').notNull(),
-  details: json('details').$type<Record<string, unknown>>().default({}).notNull(),
+  details: jsonb('details').$type<Record<string, unknown>>().default({}).notNull(),
   ipAddress: text('ip_address'),
   status: text('status').default('success').notNull(), // 'success' | 'failure'
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
+
+
+// ==========================================
+// Relationships
+// ==========================================
+
+export const userRelations = relations(user, ({ many }) => ({
+  sessions: many(session),
+  accounts: many(account),
+}));
+
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, {
+    fields: [session.userId],
+    references: [user.id],
+  }),
+}));
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, {
+    fields: [account.userId],
+    references: [user.id],
+  }),
+}));
+
+export const mediaRelations = relations(media, ({ one }) => ({
+  category: one(category, {
+    fields: [media.categoryId],
+    references: [category.id]
+  }),
+}))
