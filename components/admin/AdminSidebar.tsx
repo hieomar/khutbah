@@ -8,6 +8,7 @@ import {
   Users,
   ShieldCheck,
   Film,
+  PlusCircle,
   MailCheck,
   ScrollText,
   LogOut,
@@ -53,7 +54,7 @@ export default function AdminSidebar({ currentUser, isOpen, onClose }: AdminSide
       href: '/admin',
       icon: <LayoutDashboard className="w-4 h-4" />,
       exact: true,
-      allowed: true,
+      allowed: currentUser.role === 'admin',
     },
     {
       label: 'Users',
@@ -81,6 +82,13 @@ export default function AdminSidebar({ currentUser, isOpen, onClose }: AdminSide
         hasPermission(currentUser.permissions, 'media.create'),
     },
     {
+      label: 'Upload Media',
+      href: '/admin/media/new',
+      icon: <PlusCircle className="w-4 h-4" />,
+      exact: true,
+      allowed: currentUser.role === 'mosque' && hasPermission(currentUser.permissions, 'media.create'),
+    },
+    {
       label: 'Invitations',
       href: '/admin/invitations',
       icon: <MailCheck className="w-4 h-4" />,
@@ -92,9 +100,11 @@ export default function AdminSidebar({ currentUser, isOpen, onClose }: AdminSide
       href: '/admin/audit-logs',
       icon: <ScrollText className="w-4 h-4" />,
       exact: false,
-      allowed: true,
+      allowed: currentUser.role === 'admin',
     },
   ];
+
+  const brandHref = currentUser.role === 'mosque' ? '/admin/media' : '/admin';
 
   return (
     <>
@@ -115,10 +125,10 @@ export default function AdminSidebar({ currentUser, isOpen, onClose }: AdminSide
         <div>
           {/* Brand Header */}
           <div className="h-16 px-6 flex items-center justify-between border-b border-black/8">
-            <Link href="/admin" className="flex items-center gap-2 group">
+            <Link href={brandHref} className="flex items-center gap-2 group">
               <Logo size="sm" />
               <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#171717] text-canvas">
-                Admin
+                {currentUser.role === 'mosque' ? 'Mosque Rep' : 'Admin'}
               </span>
             </Link>
           </div>
@@ -175,7 +185,7 @@ export default function AdminSidebar({ currentUser, isOpen, onClose }: AdminSide
           </div>
         </div>
 
-        {/* Signed-in Administrator Profile Footer & Logout */}
+        {/* Signed-in Administrator / Mosque Rep Profile Footer & Logout */}
         <div className="p-4 border-t border-black/8 bg-black/2 space-y-3">
           <div className="flex items-center justify-between gap-2">
             <div className="truncate pr-1">
@@ -183,27 +193,31 @@ export default function AdminSidebar({ currentUser, isOpen, onClose }: AdminSide
               <p className="text-[10px] text-secondary truncate">{currentUser.email}</p>
             </div>
             <span className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-accent-orange/15 text-[#171717] shrink-0 border border-accent-orange/30">
-              Admin
+              {currentUser.role === 'mosque' ? 'Mosque Rep' : 'Admin'}
             </span>
           </div>
 
           <div className="flex items-center justify-between text-[11px] text-secondary pt-2 border-t border-black/6">
-            <span className="text-[10px] font-mono">
-              {currentUser.permissions.length} perms active
+            <span className="text-[10px] font-mono truncate max-w-[130px]">
+              {currentUser.role === 'mosque'
+                ? currentUser.mosque?.name || 'Mosque Representative'
+                : `${currentUser.permissions.length} perms active`}
             </span>
 
             <button
               onClick={handleLogout}
               disabled={isLoggingOut}
               className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-rose-700 hover:text-rose-900 hover:bg-rose-50 transition-colors cursor-pointer disabled:opacity-50"
-              title="Sign out of administrator session"
+              title="Sign out of management session"
             >
               {isLoggingOut ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
-                <LogOut className="w-3.5 h-3.5" />
+                <>
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Logout</span>
+                </>
               )}
-              <span>{isLoggingOut ? 'Signing out...' : 'Sign Out'}</span>
             </button>
           </div>
         </div>

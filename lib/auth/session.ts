@@ -17,31 +17,31 @@ export class AuthorizationError extends Error {
 }
 
 /**
- * Server-side guard: Ensures the user is an active Administrator.
+ * Server-side guard: Ensures the user is an active Administrator or Mosque Representative.
  * Listeners and suspended accounts are strictly rejected.
  */
 export async function requireAdmin(): Promise<AdminUserData> {
   const session = await getSession();
 
   if (!session || !session.user) {
-    throw new AuthenticationError('You must be signed in to access the admin dashboard');
+    throw new AuthenticationError('You must be signed in to access the management portal');
   }
 
   const currentUser = session.user;
 
-  if (currentUser.role !== 'admin') {
-    throw new AuthorizationError('Access denied: Listener accounts cannot access administrator operations');
+  if (currentUser.role !== 'admin' && currentUser.role !== 'mosque') {
+    throw new AuthorizationError('Access denied: Listener accounts cannot access management operations');
   }
 
   if (currentUser.status !== 'active') {
-    throw new AuthorizationError('Access denied: Administrator account is not active');
+    throw new AuthorizationError('Access denied: Account is not active');
   }
 
   return currentUser;
 }
 
 /**
- * Server-side guard: Ensures the administrator has the exact required permission.
+ * Server-side guard: Ensures the user has the exact required permission.
  * Centralized authorization check conceptually: requirePermission("media.create")
  */
 export async function requirePermission(requiredPerm: PermissionId): Promise<AdminUserData> {
@@ -51,7 +51,7 @@ export async function requirePermission(requiredPerm: PermissionId): Promise<Adm
 
   if (!isAuthorized) {
     throw new AuthorizationError(
-      `Permission denied: Your administrator account lacks the '${requiredPerm}' permission`
+      `Permission denied: Your account lacks the '${requiredPerm}' permission`
     );
   }
 

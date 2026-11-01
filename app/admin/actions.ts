@@ -32,7 +32,7 @@ import { headers } from 'next/headers';
 const CreateUserSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100),
   email: z.string().email('Invalid email address'),
-  role: z.enum(['admin', 'listener']),
+  role: z.enum(['admin', 'listener', 'mosque']),
   status: z.enum(['active', 'suspended', 'pending']).default('active'),
   permissions: z.array(z.string()).default([]),
 });
@@ -40,13 +40,13 @@ const CreateUserSchema = z.object({
 const UpdateUserSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(2, 'Name must be at least 2 characters').max(100),
-  role: z.enum(['admin', 'listener']),
+  role: z.enum(['admin', 'listener', 'mosque']),
   status: z.enum(['active', 'suspended', 'pending']),
 });
 
 const InviteUserSchema = z.object({
   email: z.string().email('Invalid email address'),
-  role: z.enum(['admin', 'listener']),
+  role: z.enum(['admin', 'listener', 'mosque']),
   permissions: z.array(z.string()).default([]),
   message: z.string().max(500).optional(),
 });
@@ -97,7 +97,6 @@ export async function createUserAction(formData: unknown) {
     const admin = await requirePermission('users.create');
     const parsed = CreateUserSchema.parse(formData);
 
-    // If assigning permissions or creating an admin, verify permission delegation rights
     if (parsed.role === 'admin') {
       await requirePermission('admins.create');
       if (parsed.permissions.length > 0) {
@@ -138,7 +137,7 @@ export async function updateUserAction(formData: unknown) {
     if (!targetUser) throw new Error('User not found');
 
     // Safeguard: Protect the last admin with 'admins.permissions.manage' from being demoted or suspended
-    if (targetUser.role === 'admin' && (parsed.role === 'listener' || parsed.status !== 'active')) {
+    if (targetUser.role === 'admin' && (parsed.role !== 'admin' || parsed.status !== 'active')) {
       const isLastAdmin = await isLastAdminWithPermission(parsed.id, 'admins.permissions.manage');
       if (isLastAdmin) {
         throw new Error(
@@ -190,7 +189,6 @@ export async function initiatePasswordResetAction(userId: string) {
       'http://localhost:3000';
     const redirectTo = `${appUrl}/auth/reset-password`;
 
-    // Trigger Better Auth's password reset flow which generates a secure token and calls our sendResetPassword handler (via Resend)
     const reqHeaders = await headers();
     await auth.api.requestPasswordReset({
       body: {
@@ -346,7 +344,6 @@ export async function resendInvitationAction(invitationId: string) {
       'http://localhost:3000';
     const inviteUrl = `${appUrl}/auth/accept-invite?token=${resent.token}`;
 
-    // Send refreshed invitation email via Resend
     await sendInvitationEmail({
       recipientEmail: resent.email,
       inviterName: admin.name,
@@ -362,8 +359,8 @@ export async function resendInvitationAction(invitationId: string) {
       action: 'invitation.resent',
       targetType: 'invitation',
       targetId: resent.id,
-      targetSummary: `Refreshed & resent invitation to ${resent.email}`,
-      details: { invitationId: resent.id, email: resent.email, expiresAt: resent.expiresAt },
+      targetSummary: `Resent invitation to ${resent.email}`,
+      details: { invitationId: resent.id, email: resent.email },
     });
 
     return { success: true, invitation: resent };
@@ -395,7 +392,7 @@ export async function createMediaAction(formData: unknown) {
       const storedThumb = await StorageService.uploadFile(
         'thumbnails',
         parsed.thumbnailName,
-        1024 * 500, // sample thumb size
+        1024 * 500,
         'image/jpeg'
       );
       storedThumbKey = storedThumb.key;
@@ -424,6 +421,7 @@ export async function createMediaAction(formData: unknown) {
       isFeatured: parsed.isFeatured,
       createdBy: admin.id,
       updatedBy: null,
+      mosqueId: admin.mosqueId || null,
       archivedAt: null,
     });
 
@@ -438,6 +436,7 @@ export async function createMediaAction(formData: unknown) {
         categoryId: parsed.categoryId,
         district: parsed.district,
         storageKey: storedMedia.key,
+        mosqueId: admin.mosqueId || null,
       },
     });
 
@@ -454,6 +453,11 @@ export async function updateMediaAction(formData: unknown) {
 
     const existing = await getMediaById(parsed.id);
     if (!existing) throw new Error('Media item not found');
+
+    // If user is a mosque rep, ensure they only update media from their own mosque
+    if (admin.role === 'mosque' && existing.mosqueId && existing.mosqueId !== admin.mosqueId) {
+      throw new Error('Access denied: You can only edit media from your mosque');
+    }
 
     const updated = await updateMedia(parsed.id, {
       ...parsed,
@@ -478,6 +482,13 @@ export async function updateMediaAction(formData: unknown) {
 export async function archiveMediaAction(mediaId: string) {
   try {
     const admin = await requirePermission('media.archive');
+    const existing = await getMediaById(mediaId);
+    if (!existing) throw new Error('Media item not found');
+
+    if (admin.role === 'mosque' && existing.mosqueId && existing.mosqueId !== admin.mosqueId) {
+      throw new Error('Access denied: You can only archive media from your mosque');
+    }
+
     const archived = await archiveMedia(mediaId);
 
     await recordAuditEvent({
@@ -498,6 +509,13 @@ export async function archiveMediaAction(mediaId: string) {
 export async function restoreMediaAction(mediaId: string) {
   try {
     const admin = await requirePermission('media.archive');
+    const existing = await getMediaById(mediaId);
+    if (!existing) throw new Error('Media item not found');
+
+    if (admin.role === 'mosque' && existing.mosqueId && existing.mosqueId !== admin.mosqueId) {
+      throw new Error('Access denied: You can only restore media from your mosque');
+    }
+
     const restored = await restoreMedia(mediaId);
 
     await recordAuditEvent({
@@ -520,6 +538,10 @@ export async function deleteMediaAction(mediaId: string) {
     const admin = await requirePermission('media.delete');
     const target = await getMediaById(mediaId);
     if (!target) throw new Error('Media item not found');
+
+    if (admin.role === 'mosque' && target.mosqueId && target.mosqueId !== admin.mosqueId) {
+      throw new Error('Access denied: You can only delete media from your mosque');
+    }
 
     // Delete database record safely
     await deleteMedia(mediaId);

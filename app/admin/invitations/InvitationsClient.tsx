@@ -6,6 +6,7 @@ import {
   RotateCcw,
   Ban,
   X,
+  Building2,
 } from 'lucide-react';
 import { InvitationData, AdminUserData } from '../../../lib/db/store';
 import { inviteUserAction, revokeInvitationAction, resendInvitationAction } from '../actions';
@@ -26,14 +27,14 @@ export default function InvitationsClient({
 
   const [form, setForm] = useState<{
     email: string;
-    role: 'admin' | 'listener';
+    role: 'admin' | 'listener' | 'mosque';
     permissions: PermissionId[];
     message: string;
   }>({
     email: '',
-    role: 'admin',
-    permissions: ['media.view', 'media.create', 'users.view'],
-    message: 'You have been invited to collaborate on the Khutbah Malawi Islamic Media platform.',
+    role: 'mosque',
+    permissions: ['media.view', 'media.create', 'media.update'],
+    message: 'You have been invited to collaborate as a Mosque Representative on the Khutbah Malawi Islamic Media platform.',
   });
 
   const [loading, setLoading] = useState(false);
@@ -54,9 +55,9 @@ export default function InvitationsClient({
       setIsInviteOpen(false);
       setForm({
         email: '',
-        role: 'admin',
-        permissions: ['media.view', 'media.create', 'users.view'],
-        message: '',
+        role: 'mosque',
+        permissions: ['media.view', 'media.create', 'media.update'],
+        message: 'You have been invited to collaborate as a Mosque Representative on the Khutbah Malawi Islamic Media platform.',
       });
       setMessage({
         type: 'success',
@@ -174,10 +175,13 @@ export default function InvitationsClient({
                         className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
                           inv.role === 'admin'
                             ? 'bg-[#171717] text-white'
+                            : inv.role === 'mosque'
+                            ? 'bg-emerald-100 text-emerald-800'
                             : 'bg-black/5 text-secondary'
                         }`}
                       >
-                        {inv.role}
+                        {inv.role === 'mosque' && <Building2 className="w-2.5 h-2.5" />}
+                        <span>{inv.role === 'mosque' ? 'Mosque Rep' : inv.role}</span>
                       </span>
                     </td>
 
@@ -287,11 +291,22 @@ export default function InvitationsClient({
                 </label>
                 <select
                   value={form.role}
-                  onChange={(e) =>
-                    setForm({ ...form, role: e.target.value as 'admin' | 'listener' })
-                  }
+                  onChange={(e) => {
+                    const nextRole = e.target.value as 'admin' | 'listener' | 'mosque';
+                    setForm({
+                      ...form,
+                      role: nextRole,
+                      permissions:
+                        nextRole === 'admin'
+                          ? form.permissions
+                          : nextRole === 'mosque'
+                          ? ['media.view', 'media.create', 'media.update']
+                          : [],
+                    });
+                  }}
                   className="w-full bg-white text-xs px-3.5 py-2.5 rounded-xl border border-black/10 focus:outline-none focus:border-[#171717]"
                 >
+                  <option value="mosque">Mosque Representative (Upload &amp; manage mosque media)</option>
                   <option value="admin">Administrator (with granular permissions)</option>
                   <option value="listener">Listener (Standard public account)</option>
                 </select>
@@ -306,6 +321,12 @@ export default function InvitationsClient({
                     selectedPermissions={form.permissions}
                     onChange={(perms) => setForm({ ...form, permissions: perms })}
                   />
+                </div>
+              )}
+
+              {form.role === 'mosque' && (
+                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900">
+                  Mosque representatives will receive default media privileges (View, Upload, and Edit media for their mosque) upon accepting the invite.
                 </div>
               )}
 

@@ -15,20 +15,29 @@ import {
 // 1. Better Auth Core Tables
 // ==========================================
 
+export const mosque = pgTable('mosque', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  location: text('location').notNull(),
+});
+
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').default(false).notNull(),
   image: text('image'),
-  role: text('role').default('listener').notNull(), // 'admin' | 'listener'
+  role: text('role').default('listener').notNull(), // 'admin' | 'listener' | 'mosque'
   status: text('status').default('active').notNull(), // 'active' | 'suspended' | 'pending'
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => /* @__PURE__ */ new Date()).notNull(),
+  mosqueId: text('mosque_id').references(() => mosque.id, {
+    onDelete: 'set null',
+  }),
 },(table) => [
     check(
       'user_role_check',
-      sql`${table.role} IN ('admin', 'listener')`,
+      sql`${table.role} IN ('admin', 'listener', 'mosque')`,
     ),
     check(
       'user_status_check',
@@ -124,7 +133,7 @@ export const adminPermission = pgTable('admin_permission', {
 export const invitation = pgTable('invitation', {
   id: text('id').primaryKey(),
   email: text('email').notNull(),
-  role: text('role').default('listener').notNull(), // 'admin' | 'listener'
+  role: text('role').default('listener').notNull(), // 'admin' | 'listener' | 'mosque'
   permissions: jsonb('permissions').$type<string[]>().default([]).notNull(), // jsonb array of permission ids
   invitedBy: text('invited_by')
     .notNull()
@@ -197,6 +206,9 @@ export const media = pgTable('media', {
     .references(() => user.id),
   updatedBy: text('updated_by')
     .references(() => user.id),
+  mosqueId: text('mosque_id').references(() => mosque.id, {
+    onDelete: 'set null',
+  }),
   archivedAt: timestamp('archived_at'),
   createdAt: timestamp('created_at')
     .defaultNow()
@@ -239,14 +251,17 @@ export const auditLog = pgTable('audit_log', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-
 // ==========================================
 // Relationships
 // ==========================================
 
-export const userRelations = relations(user, ({ many }) => ({
+export const userRelations = relations(user, ({ many, one }) => ({
   sessions: many(session),
   accounts: many(account),
+  mosque: one(mosque, {
+    fields: [user.mosqueId],
+    references: [mosque.id],
+  }),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -266,6 +281,15 @@ export const accountRelations = relations(account, ({ one }) => ({
 export const mediaRelations = relations(media, ({ one }) => ({
   category: one(category, {
     fields: [media.categoryId],
-    references: [category.id]
+    references: [category.id],
   }),
-}))
+  mosque: one(mosque, {
+    fields: [media.mosqueId],
+    references: [mosque.id],
+  }),
+}));
+
+export const mosqueRelations = relations(mosque, ({ many }) => ({
+  representatives: many(user),
+  media: many(media),
+}));

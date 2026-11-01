@@ -29,6 +29,8 @@ const AcceptInviteSchema = z.object({
   token: z.string().min(1, 'Invitation token is required'),
   name: z.string().min(2, 'Name must be at least 2 characters'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
+  mosqueName: z.string().optional(),
+  mosqueLocation: z.string().optional(),
 });
 
 export interface InvitationDetailsResult {
@@ -36,7 +38,7 @@ export interface InvitationDetailsResult {
   error?: string;
   invitation?: {
     email: string;
-    role: 'admin' | 'listener';
+    role: 'admin' | 'listener' | 'mosque';
     permissions: string[];
     inviterName: string;
     expiresAt: Date;
@@ -114,6 +116,15 @@ export async function acceptInvitationAction(formData: unknown) {
       return { success: false, error: 'This invitation has expired.' };
     }
 
+    if (inv.role === 'mosque') {
+      if (!parsed.mosqueName?.trim()) {
+        return { success: false, error: 'Please enter the name of the mosque.' };
+      }
+      if (!parsed.mosqueLocation?.trim()) {
+        return { success: false, error: 'Please enter the location of the mosque.' };
+      }
+    }
+
     const reqHeaders = await headers();
 
     // Check if account already exists in Better Auth
@@ -140,9 +151,11 @@ export async function acceptInvitationAction(formData: unknown) {
     const { user: updatedUser } = await acceptInvitation(parsed.token, {
       name: parsed.name,
       userId,
+      mosqueName: parsed.mosqueName,
+      mosqueLocation: parsed.mosqueLocation,
     });
 
-    // Ensure role and permissions are correctly updated on the user record
+    // Ensure role and status are correctly updated on the user record
     await db
       .update(schema.user)
       .set({
@@ -154,6 +167,8 @@ export async function acceptInvitationAction(formData: unknown) {
 
     if (inv.role === 'admin' && inv.permissions.length > 0 && updatedUser) {
       await setUserPermissions(updatedUser.id, inv.permissions);
+    } else if (inv.role === 'mosque' && updatedUser) {
+      await setUserPermissions(updatedUser.id, ['media.view', 'media.create', 'media.update']);
     }
 
     // Audit log
@@ -178,12 +193,12 @@ export async function acceptInvitationAction(formData: unknown) {
       process.env.NEXT_PUBLIC_APP_URL ||
       process.env.BETTER_AUTH_URL ||
       'http://localhost:3000';
-    const loginUrl = inv.role === 'admin' ? `${appUrl}/auth/admin/login` : `${appUrl}/`;
+    const loginUrl = (inv.role === 'admin' || inv.role === 'mosque') ? `${appUrl}/auth/admin/login` : `${appUrl}/`;
 
     await sendWelcomeEmail({
       recipientEmail: inv.email,
       userName: parsed.name,
-      role: inv.role === 'admin' ? 'Administrator' : 'Listener',
+      role: inv.role === 'admin' ? 'Administrator' : inv.role === 'mosque' ? 'Mosque Representative' : 'Listener',
       loginUrl,
     });
 

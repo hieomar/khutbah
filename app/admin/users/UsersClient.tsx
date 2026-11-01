@@ -7,6 +7,7 @@ import {
   KeyRound,
   Edit,
   Shield,
+  Building2,
   X,
   Eye,
 } from 'lucide-react';
@@ -40,7 +41,7 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
   const [createForm, setCreateForm] = useState<{
     name: string;
     email: string;
-    role: 'admin' | 'listener';
+    role: 'admin' | 'listener' | 'mosque';
     status: 'active' | 'suspended' | 'pending';
     permissions: PermissionId[];
   }>({
@@ -48,13 +49,13 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
     email: '',
     role: 'listener',
     status: 'active',
-    permissions: [],
+    permissions: ['users.view', 'media.view'],
   });
 
   const [editForm, setEditForm] = useState<{
     id: string;
     name: string;
-    role: 'admin' | 'listener';
+    role: 'admin' | 'listener' | 'mosque';
     status: 'active' | 'suspended' | 'pending';
   }>({
     id: '',
@@ -66,12 +67,12 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Permission checks
+  // Permissions checks
   const canCreate = hasPermission(currentUser.permissions, 'users.create');
   const canUpdate = hasPermission(currentUser.permissions, 'users.update');
   const canResetPass = hasPermission(currentUser.permissions, 'users.reset_password');
 
-  // Filtered users list
+  // Filter users
   const filteredUsers = users.filter((u) => {
     if (roleFilter !== 'all' && u.role !== roleFilter) return false;
     if (statusFilter !== 'all' && u.status !== statusFilter) return false;
@@ -98,9 +99,9 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
         email: '',
         role: 'listener',
         status: 'active',
-        permissions: [],
+        permissions: ['users.view', 'media.view'],
       });
-      setMessage({ type: 'success', text: `Successfully created user ${res.user.name}` });
+      setMessage({ type: 'success', text: `Successfully created account for ${res.user.name}` });
     } else {
       setMessage({ type: 'error', text: res.error || 'Failed to create user' });
     }
@@ -115,9 +116,9 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
     setLoading(false);
 
     if (res.success && res.user) {
-      setUsers(users.map((u) => (u.id === res.user.id ? res.user : u)));
+      setUsers(users.map((u) => (u.id === res.user?.id ? res.user : u)));
       setEditingUser(null);
-      setMessage({ type: 'success', text: `Updated user ${res.user.name}` });
+      setMessage({ type: 'success', text: `Profile updated for ${res.user.name}` });
     } else {
       setMessage({ type: 'error', text: res.error || 'Failed to update user' });
     }
@@ -133,22 +134,25 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
     setResettingUser(null);
 
     if (res.success) {
-      setMessage({ type: 'success', text: res.message || 'Password reset link sent.' });
+      setMessage({
+        type: 'success',
+        text: res.message || `Password reset link dispatched to ${resettingUser.email}`,
+      });
     } else {
-      setMessage({ type: 'error', text: res.error || 'Failed to initiate reset' });
+      setMessage({ type: 'error', text: res.error || 'Failed to initiate password reset' });
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
+      {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="font-serif-heading text-3xl font-medium text-[#171717]">
             User Management
           </h2>
           <p className="text-xs text-secondary">
-            Manage platform accounts, listeners, and assign administrator profiles.
+            Manage authenticated platform users, role assignments, and security status.
           </p>
         </div>
 
@@ -161,7 +165,7 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#171717] text-white text-xs font-medium hover:bg-black transition-all cursor-pointer shadow-xs self-start sm:self-auto"
           >
             <UserPlus className="w-4 h-4 text-accent-orange" />
-            <span>Create New User</span>
+            <span>Create Account</span>
           </button>
         )}
       </div>
@@ -182,23 +186,22 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
         </div>
       )}
 
-      {/* Filter and Search Bar */}
-      <div className="p-4 rounded-2xl bg-white border border-black/8 shadow-2xs space-y-3">
-        <div className="flex flex-col sm:flex-row items-center gap-3 justify-between">
-          {/* Search */}
-          <div className="relative w-full sm:w-80">
+      {/* Filters & Search */}
+      <div className="p-4 rounded-2xl bg-white border border-black/8 shadow-2xs">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          {/* Search bar */}
+          <div className="relative flex-1">
             <Search className="w-4 h-4 text-secondary absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name or email..."
-              className="w-full bg-surface text-xs text-[#171717] placeholder-secondary/70 pl-9 pr-4 py-2 rounded-xl border border-black/8 focus:outline-none focus:border-[#171717]"
+              placeholder="Search by full name or email address..."
+              className="w-full bg-surface text-xs pl-9 pr-4 py-2 rounded-xl border border-black/8 focus:outline-none focus:border-[#171717]"
             />
           </div>
 
-          {/* Filters */}
-          <div className="flex items-center gap-2 self-stretch sm:self-auto">
+          <div className="flex flex-wrap items-center gap-3">
             {/* Role Filter */}
             <div className="flex items-center gap-1 bg-surface px-3 py-1.5 rounded-xl border border-black/8 text-xs">
               <span className="text-secondary text-[11px]">Role:</span>
@@ -209,6 +212,7 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
               >
                 <option value="all">All Roles</option>
                 <option value="admin">Administrators</option>
+                <option value="mosque">Mosque Rep</option>
                 <option value="listener">Listeners</option>
               </select>
             </div>
@@ -262,11 +266,14 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
                           className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
                             u.role === 'admin'
                               ? 'bg-[#171717] text-white'
+                              : u.role === 'mosque'
+                              ? 'bg-emerald-100 text-emerald-800'
                               : 'bg-black/5 text-secondary'
                           }`}
                         >
                           {u.role === 'admin' && <Shield className="w-2.5 h-2.5 text-accent-orange" />}
-                          <span>{u.role}</span>
+                          {u.role === 'mosque' && <Building2 className="w-2.5 h-2.5" />}
+                          <span>{u.role === 'mosque' ? 'Mosque Rep' : u.role}</span>
                         </span>
                       </td>
 
@@ -360,10 +367,14 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
                     </div>
                     <span
                       className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded ${
-                        u.role === 'admin' ? 'bg-[#171717] text-white' : 'bg-black/5 text-secondary'
+                        u.role === 'admin'
+                          ? 'bg-[#171717] text-white'
+                          : u.role === 'mosque'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-black/5 text-secondary'
                       }`}
                     >
-                      {u.role}
+                      {u.role === 'mosque' ? 'Mosque Rep' : u.role}
                     </span>
                   </div>
 
@@ -435,7 +446,7 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
                   required
                   value={createForm.name}
                   onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                  placeholder="e.g. Sheikh Yusuf Banda"
+                  placeholder="e.g. Sheikh Imran"
                   className="w-full bg-white text-xs px-3.5 py-2.5 rounded-xl border border-black/10 focus:outline-none focus:border-[#171717]"
                 />
               </div>
@@ -449,7 +460,7 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
                   required
                   value={createForm.email}
                   onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                  placeholder="name@domain.mw"
+                  placeholder="user@khutbah.mw"
                   className="w-full bg-white text-xs px-3.5 py-2.5 rounded-xl border border-black/10 focus:outline-none focus:border-[#171717]"
                 />
               </div>
@@ -462,18 +473,21 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
                     onChange={(e) =>
                       setCreateForm({
                         ...createForm,
-                        role: e.target.value as 'admin' | 'listener',
+                        role: e.target.value as 'admin' | 'listener' | 'mosque',
                       })
                     }
                     className="w-full bg-white text-xs px-3.5 py-2.5 rounded-xl border border-black/10 focus:outline-none focus:border-[#171717]"
                   >
                     <option value="listener">Listener</option>
+                    <option value="mosque">Mosque Rep</option>
                     <option value="admin">Administrator</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#171717] mb-1">Status</label>
+                  <label className="block text-xs font-semibold text-[#171717] mb-1">
+                    Initial Status
+                  </label>
                   <select
                     value={createForm.status}
                     onChange={(e) =>
@@ -485,13 +499,13 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
                     className="w-full bg-white text-xs px-3.5 py-2.5 rounded-xl border border-black/10 focus:outline-none focus:border-[#171717]"
                   >
                     <option value="active">Active</option>
-                    <option value="pending">Pending</option>
                     <option value="suspended">Suspended</option>
+                    <option value="pending">Pending</option>
                   </select>
                 </div>
               </div>
 
-              {/* Granular permissions if role is admin */}
+              {/* If creating Admin, show permission selector */}
               {createForm.role === 'admin' && (
                 <div className="pt-2">
                   <label className="block text-xs font-semibold text-[#171717] mb-2">
@@ -508,7 +522,7 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-medium text-secondary hover:bg-black/5"
+                  className="px-4 py-2 rounded-xl text-xs text-secondary"
                 >
                   Cancel
                 </button>
@@ -530,7 +544,9 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
           <div className="bg-surface rounded-3xl border border-black/10 shadow-2xl p-6 sm:p-8 max-w-md w-full">
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-black/8">
-              <h3 className="font-serif-heading text-2xl font-medium text-[#171717]">Edit User</h3>
+              <h3 className="font-serif-heading text-2xl font-medium text-[#171717]">
+                Edit User Account
+              </h3>
               <button
                 onClick={() => setEditingUser(null)}
                 className="p-1.5 rounded-full hover:bg-black/5"
@@ -541,7 +557,9 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
 
             <form onSubmit={handleUpdateUser} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-[#171717] mb-1">Name</label>
+                <label className="block text-xs font-semibold text-[#171717] mb-1">
+                  Full Name
+                </label>
                 <input
                   type="text"
                   required
@@ -567,11 +585,12 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
                   <select
                     value={editForm.role}
                     onChange={(e) =>
-                      setEditForm({ ...editForm, role: e.target.value as 'admin' | 'listener' })
+                      setEditForm({ ...editForm, role: e.target.value as 'admin' | 'listener' | 'mosque' })
                     }
                     className="w-full bg-white text-xs px-3.5 py-2.5 rounded-xl border border-black/10 focus:outline-none focus:border-[#171717]"
                   >
                     <option value="listener">Listener</option>
+                    <option value="mosque">Mosque Rep</option>
                     <option value="admin">Administrator</option>
                   </select>
                 </div>
@@ -643,7 +662,7 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
                 <div>
                   <span className="text-secondary block">Role</span>
                   <span className="font-bold text-[#171717] uppercase">
-                    {selectedUserDetails.role}
+                    {selectedUserDetails.role === 'mosque' ? 'Mosque Rep' : selectedUserDetails.role}
                   </span>
                 </div>
                 <div>
@@ -657,6 +676,17 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
                   </span>
                 </div>
               </div>
+
+              {selectedUserDetails.role === 'mosque' && selectedUserDetails.mosque && (
+                <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-200/60 space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-950">
+                    <Building2 className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>Associated Mosque</span>
+                  </div>
+                  <div className="font-medium text-[#171717]">{selectedUserDetails.mosque.name}</div>
+                  <div className="text-[11px] text-secondary">{selectedUserDetails.mosque.location}</div>
+                </div>
+              )}
 
               {selectedUserDetails.role === 'admin' && (
                 <div className="p-4 rounded-2xl bg-white border border-black/5">
@@ -676,39 +706,30 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
                 </div>
               )}
             </div>
-
-            <div className="pt-4 mt-6 border-t border-black/8 flex justify-end">
-              <button
-                onClick={() => setSelectedUserDetails(null)}
-                className="px-4 py-2 rounded-xl bg-[#171717] text-white text-xs font-medium"
-              >
-                Close
-              </button>
-            </div>
           </div>
         </div>
       )}
 
-      {/* 4. Modal: Confirm Password Reset */}
+      {/* 4. Modal: Password Reset Confirmation */}
       {resettingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-surface rounded-3xl border border-black/10 shadow-2xl p-6 max-w-md w-full space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-full bg-amber-100 text-amber-700">
-                <KeyRound className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-serif-heading text-xl font-medium text-[#171717]">
-                  Initiate Password Reset
-                </h3>
-                <p className="text-xs text-secondary">Confirm security action</p>
-              </div>
+          <div className="bg-surface rounded-3xl border border-black/10 shadow-2xl p-6 sm:p-8 max-w-md w-full space-y-4">
+            <div className="flex items-center justify-between pb-4 border-b border-black/8">
+              <h3 className="font-serif-heading text-2xl font-medium text-[#171717]">
+                Reset User Password
+              </h3>
+              <button
+                onClick={() => setResettingUser(null)}
+                className="p-1.5 rounded-full hover:bg-black/5"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
             <p className="text-xs text-secondary leading-relaxed">
-              Are you sure you want to trigger a password reset for{' '}
-              <strong className="text-[#171717]">{resettingUser.email}</strong>? A secure, expiring
-              reset link will be generated.
+              Are you sure you want to send a secure password reset link to{' '}
+              <strong className="text-[#171717]">{resettingUser.email}</strong>? They will be
+              dispatched a token valid for 1 hour to establish new login credentials.
             </p>
 
             <div className="pt-4 border-t border-black/8 flex items-center justify-end gap-3">
@@ -721,11 +742,11 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
               </button>
               <button
                 type="button"
-                onClick={handlePasswordReset}
                 disabled={loading}
-                className="px-5 py-2 rounded-xl bg-[#171717] text-white text-xs font-medium hover:bg-black disabled:opacity-50"
+                onClick={handlePasswordReset}
+                className="px-5 py-2.5 rounded-xl bg-accent-orange text-white text-xs font-medium hover:bg-accent-orange/90 disabled:opacity-50 shadow-xs"
               >
-                {loading ? 'Sending...' : 'Confirm & Dispatch Reset'}
+                {loading ? 'Dispatching...' : 'Dispatch Reset Email'}
               </button>
             </div>
           </div>

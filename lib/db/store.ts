@@ -5,14 +5,22 @@ import { PermissionId, ALL_PERMISSION_IDS } from '../auth/permissions';
 import { broadcastStatsUpdate, broadcastAuditLog } from '../events/admin-events';
 import { StorageService } from '../storage';
 
+export interface MosqueData {
+  id: string;
+  name: string;
+  location: string;
+}
+
 export interface AdminUserData {
   id: string;
   name: string;
   email: string;
   emailVerified: boolean;
   image?: string | null;
-  role: 'admin' | 'listener';
+  role: 'admin' | 'listener' | 'mosque';
   status: 'active' | 'suspended' | 'pending';
+  mosqueId?: string | null;
+  mosque?: MosqueData | null;
   createdAt: Date;
   updatedAt: Date;
   permissions: PermissionId[];
@@ -51,6 +59,7 @@ export interface MediaItemData {
 
   createdBy: string;
   updatedBy?: string | null;
+  mosqueId?: string | null;
 
   archivedAt?: Date | null;
   createdAt: Date;
@@ -66,7 +75,7 @@ export interface MediaPlaybackData {
 export interface InvitationData {
   id: string;
   email: string;
-  role: 'admin' | 'listener';
+  role: 'admin' | 'listener' | 'mosque';
   permissions: PermissionId[];
   invitedBy: string;
   token: string;
@@ -106,6 +115,18 @@ export async function getUserById(id: string): Promise<AdminUserData | null> {
 
   if (!userRow) return null;
 
+  let mosqueData: MosqueData | null = null;
+  if (userRow.mosqueId) {
+    const [m] = await db
+      .select()
+      .from(schema.mosque)
+      .where(eq(schema.mosque.id, userRow.mosqueId))
+      .limit(1);
+    if (m) {
+      mosqueData = { id: m.id, name: m.name, location: m.location };
+    }
+  }
+
   const perms = await db
     .select({ permissionId: schema.adminPermission.permissionId })
     .from(schema.adminPermission)
@@ -121,8 +142,10 @@ export async function getUserById(id: string): Promise<AdminUserData | null> {
     email: userRow.email,
     emailVerified: userRow.emailVerified,
     image: userRow.image,
-    role: userRow.role as 'admin' | 'listener',
+    role: userRow.role as 'admin' | 'listener' | 'mosque',
     status: userRow.status as 'active' | 'suspended' | 'pending',
+    mosqueId: userRow.mosqueId,
+    mosque: mosqueData,
     createdAt: userRow.createdAt,
     updatedAt: userRow.updatedAt,
     permissions: uniquePermissions,
@@ -137,6 +160,18 @@ export async function getUserByEmail(email: string): Promise<AdminUserData | nul
     .limit(1);
 
   if (!userRow) return null;
+
+  let mosqueData: MosqueData | null = null;
+  if (userRow.mosqueId) {
+    const [m] = await db
+      .select()
+      .from(schema.mosque)
+      .where(eq(schema.mosque.id, userRow.mosqueId))
+      .limit(1);
+    if (m) {
+      mosqueData = { id: m.id, name: m.name, location: m.location };
+    }
+  }
 
   const perms = await db
     .select({ permissionId: schema.adminPermission.permissionId })
@@ -153,8 +188,10 @@ export async function getUserByEmail(email: string): Promise<AdminUserData | nul
     email: userRow.email,
     emailVerified: userRow.emailVerified,
     image: userRow.image,
-    role: userRow.role as 'admin' | 'listener',
+    role: userRow.role as 'admin' | 'listener' | 'mosque',
     status: userRow.status as 'active' | 'suspended' | 'pending',
+    mosqueId: userRow.mosqueId,
+    mosque: mosqueData,
     createdAt: userRow.createdAt,
     updatedAt: userRow.updatedAt,
     permissions: uniquePermissions,
@@ -162,7 +199,7 @@ export async function getUserByEmail(email: string): Promise<AdminUserData | nul
 }
 
 export async function listUsers(params?: {
-  role?: 'admin' | 'listener';
+  role?: 'admin' | 'listener' | 'mosque';
   status?: string;
   search?: string;
   limit?: number;
@@ -226,8 +263,9 @@ export async function listUsers(params?: {
     email: u.email,
     emailVerified: u.emailVerified,
     image: u.image,
-    role: u.role as 'admin' | 'listener',
+    role: u.role as 'admin' | 'listener' | 'mosque',
     status: u.status as 'active' | 'suspended' | 'pending',
+    mosqueId: u.mosqueId,
     createdAt: u.createdAt,
     updatedAt: u.updatedAt,
     permissions: Array.from(permsByUser.get(u.id) || []),
@@ -244,10 +282,11 @@ export async function listAdmins(): Promise<AdminUserData[]> {
 export async function createUser(data: {
   name: string;
   email: string;
-  role: 'admin' | 'listener';
+  role: 'admin' | 'mosque' | 'listener';
   status?: 'active' | 'suspended' | 'pending';
   permissions?: PermissionId[];
   grantedBy?: string;
+  mosqueId?: string | null;
 }): Promise<AdminUserData> {
   const existing = await getUserByEmail(data.email);
   if (existing) {
@@ -265,12 +304,20 @@ export async function createUser(data: {
     image: null,
     role: data.role,
     status: data.status || 'active',
+    mosqueId: data.mosqueId || null,
     createdAt: now,
     updatedAt: now,
   });
 
-  if (data.role === 'admin' && data.permissions && data.permissions.length > 0) {
-    const permInserts = data.permissions.map((p) => ({
+  const effectivePermissions =
+    data.role === 'admin'
+      ? data.permissions || []
+      : data.role === 'mosque'
+      ? (['media.view', 'media.create', 'media.update'] as PermissionId[])
+      : [];
+
+  if (effectivePermissions.length > 0) {
+    const permInserts = effectivePermissions.map((p) => ({
       id: crypto.randomUUID(),
       userId: id,
       permissionId: p,
@@ -291,7 +338,7 @@ export async function createUser(data: {
 
 export async function updateUser(
   id: string,
-  updates: Partial<Pick<AdminUserData, 'name' | 'role' | 'status' | 'image'>>
+  updates: Partial<Pick<AdminUserData, 'name' | 'role' | 'status' | 'image' | 'mosqueId'>>
 ): Promise<AdminUserData> {
   const now = new Date();
 
@@ -307,6 +354,10 @@ export async function updateUser(
     await db
       .delete(schema.adminPermission)
       .where(eq(schema.adminPermission.userId, id));
+  } else if (updates.role === 'mosque') {
+    // Ensure mosque representatives have default media permissions
+    const mosquePerms: PermissionId[] = ['media.view', 'media.create', 'media.update'];
+    await setUserPermissions(id, mosquePerms);
   }
 
   const updated = await getUserById(id);
@@ -324,8 +375,8 @@ export async function setUserPermissions(
 ): Promise<AdminUserData> {
   const target = await getUserById(userId);
   if (!target) throw new Error('User not found');
-  if (target.role !== 'admin') {
-    throw new Error('Permissions can only be assigned to administrators');
+  if (target.role !== 'admin' && target.role !== 'mosque') {
+    throw new Error('Permissions can only be assigned to administrators or mosque representatives');
   }
 
   const validPermissions = Array.from(
@@ -433,6 +484,7 @@ function mapMediaRowToData(
 
     createdBy: m.createdBy,
     updatedBy: m.updatedBy,
+    mosqueId: m.mosqueId,
 
     archivedAt: m.archivedAt,
 
@@ -471,11 +523,6 @@ export async function getMediaPlayback(
     throw new Error('Media storage key is missing');
   }
 
-  /*
-   * Signed URLs are intentionally short-lived.
-   *
-   * 1 hour is reasonable for normal audio/video playback.
-   */
   const expiresIn = 60 * 60;
 
   const mediaUrl = await StorageService.getSignedViewUrl(
@@ -511,6 +558,7 @@ export async function listMedia(params?: {
   mediaType?: 'audio' | 'video';
   categoryId?: string;
   district?: string;
+  mosqueId?: string;
   search?: string;
   limit?: number;
   offset?: number;
@@ -519,10 +567,6 @@ export async function listMedia(params?: {
   total: number;
 }> {
   const conditions = [];
-
-  // -----------------------------------------------------------------------
-  // Filters
-  // -----------------------------------------------------------------------
 
   if (params?.status) {
     conditions.push(
@@ -548,9 +592,11 @@ export async function listMedia(params?: {
     );
   }
 
-  // -----------------------------------------------------------------------
-  // Search
-  // -----------------------------------------------------------------------
+  if (params?.mosqueId) {
+    conditions.push(
+      eq(schema.media.mosqueId, params.mosqueId)
+    );
+  }
 
   if (params?.search) {
     const q = `%${params.search.toLowerCase()}%`;
@@ -570,10 +616,6 @@ export async function listMedia(params?: {
       ? and(...conditions)
       : undefined;
 
-  // -----------------------------------------------------------------------
-  // Count
-  // -----------------------------------------------------------------------
-
   const [countRes] = await db
     .select({
       count: count(),
@@ -583,19 +625,8 @@ export async function listMedia(params?: {
 
   const total = Number(countRes?.count || 0);
 
-  // -----------------------------------------------------------------------
-  // Pagination
-  // -----------------------------------------------------------------------
-
   const limit = params?.limit ?? 20;
   const offset = params?.offset ?? 0;
-
-  // -----------------------------------------------------------------------
-  // Fetch media
-  //
-  // IMPORTANT:
-  // No signed URLs are generated here.
-  // -----------------------------------------------------------------------
 
   const rows = await db
     .select()
@@ -615,9 +646,6 @@ export async function listMedia(params?: {
 
 // =========================================================================
 // Get Media By ID
-//
-// Returns metadata only.
-// Does NOT generate a signed playback URL.
 // =========================================================================
 
 export async function getMediaById(
@@ -638,9 +666,6 @@ export async function getMediaById(
 
 // =========================================================================
 // Create Media
-//
-// storageKey and thumbnailKey are permanent Object Storage identifiers.
-// mediaUrl/thumbnailUrl are NOT accepted here.
 // =========================================================================
 
 export async function createMedia(
@@ -661,43 +686,30 @@ export async function createMedia(
     .insert(schema.media)
     .values({
       id,
-
       title: data.title,
       description: data.description,
-
       speaker: data.speaker,
       speakerTitle: data.speakerTitle,
-
       categoryId: data.categoryId,
       categoryLabel: data.categoryLabel,
-
       mediaType: data.mediaType,
-
       duration: data.duration,
       durationSeconds: data.durationSeconds,
-
-      // Permanent Object Storage identifiers
       storageKey: data.storageKey,
       thumbnailKey: data.thumbnailKey || null,
-
       fileSize: data.fileSize || 0,
       mimeType: data.mimeType,
-
       location: data.location,
       district: data.district,
       language: data.language,
-
       tags: data.tags || [],
       keyTakeaways: data.keyTakeaways || [],
-
       status: data.status || 'published',
       isFeatured: data.isFeatured || false,
-
       createdBy: data.createdBy,
       updatedBy: data.updatedBy || null,
-
+      mosqueId: data.mosqueId || null,
       archivedAt: data.archivedAt || null,
-
       createdAt: now,
       updatedAt: now,
     })
@@ -717,9 +729,6 @@ export async function createMedia(
 
 // =========================================================================
 // Update Media
-//
-// Only database fields are accepted.
-// mediaUrl and thumbnailUrl cannot be passed to this function.
 // =========================================================================
 
 export type MediaUpdateData = Partial<
@@ -818,19 +827,11 @@ export async function restoreMedia(
 
 // =========================================================================
 // Delete Media
-//
-// Deletes the Object Storage objects first, then the database record.
 // =========================================================================
 
 export async function deleteMedia(
   id: string
 ): Promise<void> {
-  /*
-   * Only retrieve the fields required for deletion.
-   *
-   * We intentionally do not call getMediaById() because that function
-   * is for returning media metadata and we don't need anything else.
-   */
   const [item] = await db
     .select({
       id: schema.media.id,
@@ -845,10 +846,6 @@ export async function deleteMedia(
     throw new Error('Media item not found');
   }
 
-  // -----------------------------------------------------------------------
-  // Delete main media object
-  // -----------------------------------------------------------------------
-
   if (item.storageKey) {
     try {
       await StorageService.deleteFile(
@@ -859,20 +856,11 @@ export async function deleteMedia(
         `Failed to delete storage file "${item.storageKey}":`,
         err
       );
-
-      /*
-       * Stop here so that the database record isn't deleted while
-       * the actual object remains in storage.
-       */
       throw new Error(
         'Failed to delete media file from object storage'
       );
     }
   }
-
-  // -----------------------------------------------------------------------
-  // Delete thumbnail
-  // -----------------------------------------------------------------------
 
   if (item.thumbnailKey) {
     try {
@@ -884,31 +872,15 @@ export async function deleteMedia(
         `Failed to delete thumbnail file "${item.thumbnailKey}":`,
         err
       );
-
-      /*
-       * The main media object has already been deleted.
-       *
-       * We stop instead of pretending the whole operation succeeded.
-       * This leaves the database record intact, but the main media
-       * object has already been removed.
-       */
       throw new Error(
         'Failed to delete thumbnail from object storage'
       );
     }
   }
 
-  // -----------------------------------------------------------------------
-  // Delete database record
-  // -----------------------------------------------------------------------
-
   await db
     .delete(schema.media)
     .where(eq(schema.media.id, id));
-
-  // -----------------------------------------------------------------------
-  // Broadcast updated dashboard statistics
-  // -----------------------------------------------------------------------
 
   const currentStats = await getDashboardStats();
   broadcastStatsUpdate(currentStats);
@@ -927,7 +899,7 @@ export async function listInvitations(): Promise<InvitationData[]> {
   return rows.map((inv) => ({
     id: inv.id,
     email: inv.email,
-    role: inv.role as 'admin' | 'listener',
+    role: inv.role as 'admin' | 'listener' | 'mosque',
     permissions: (inv.permissions as PermissionId[]) || [],
     invitedBy: inv.invitedBy,
     token: inv.token,
@@ -942,7 +914,7 @@ export async function listInvitations(): Promise<InvitationData[]> {
 
 export async function createInvitation(data: {
   email: string;
-  role: 'admin' | 'listener';
+  role: 'admin' | 'mosque' | 'listener';
   permissions: PermissionId[];
   invitedBy: string;
   message?: string;
@@ -958,7 +930,12 @@ export async function createInvitation(data: {
       id,
       email: data.email.trim().toLowerCase(),
       role: data.role,
-      permissions: data.role === 'admin' ? data.permissions : [],
+      permissions:
+        data.role === 'admin'
+          ? data.permissions
+          : data.role === 'mosque'
+          ? ['media.view', 'media.create', 'media.update']
+          : [],
       invitedBy: data.invitedBy,
       token,
       expiresAt,
@@ -971,7 +948,7 @@ export async function createInvitation(data: {
   return {
     id: created.id,
     email: created.email,
-    role: created.role as 'admin' | 'listener',
+    role: created.role as 'admin' | 'listener' | 'mosque',
     permissions: (created.permissions as PermissionId[]) || [],
     invitedBy: created.invitedBy,
     token: created.token,
@@ -999,12 +976,12 @@ export async function revokeInvitation(id: string): Promise<InvitationData> {
   return {
     id: revoked.id,
     email: revoked.email,
-    role: revoked.role as 'admin' | 'listener',
+    role: revoked.role as 'admin' | 'listener' | 'mosque',
     permissions: (revoked.permissions as PermissionId[]) || [],
     invitedBy: revoked.invitedBy,
     token: revoked.token,
     expiresAt: revoked.expiresAt,
-    status: 'revoked',
+    status: revoked.status as 'pending' | 'accepted' | 'expired' | 'revoked',
     acceptedAt: revoked.acceptedAt,
     revokedAt: revoked.revokedAt,
     message: revoked.message,
@@ -1031,12 +1008,12 @@ export async function resendInvitation(id: string): Promise<InvitationData> {
   return {
     id: resent.id,
     email: resent.email,
-    role: resent.role as 'admin' | 'listener',
+    role: resent.role as 'admin' | 'listener' | 'mosque',
     permissions: (resent.permissions as PermissionId[]) || [],
     invitedBy: resent.invitedBy,
     token: resent.token,
     expiresAt: resent.expiresAt,
-    status: 'pending',
+    status: resent.status as 'pending' | 'accepted' | 'expired' | 'revoked',
     acceptedAt: resent.acceptedAt,
     revokedAt: resent.revokedAt,
     message: resent.message,
@@ -1056,7 +1033,7 @@ export async function getInvitationByToken(token: string): Promise<InvitationDat
   return {
     id: inv.id,
     email: inv.email,
-    role: inv.role as 'admin' | 'listener',
+    role: inv.role as 'admin' | 'listener' | 'mosque',
     permissions: (inv.permissions as PermissionId[]) || [],
     invitedBy: inv.invitedBy,
     token: inv.token,
@@ -1081,7 +1058,7 @@ export async function getInvitationById(id: string): Promise<InvitationData | nu
   return {
     id: inv.id,
     email: inv.email,
-    role: inv.role as 'admin' | 'listener',
+    role: inv.role as 'admin' | 'listener' | 'mosque',
     permissions: (inv.permissions as PermissionId[]) || [],
     invitedBy: inv.invitedBy,
     token: inv.token,
@@ -1096,7 +1073,12 @@ export async function getInvitationById(id: string): Promise<InvitationData | nu
 
 export async function acceptInvitation(
   token: string,
-  data: { name: string; userId?: string }
+  data: {
+    name: string;
+    userId?: string;
+    mosqueName?: string;
+    mosqueLocation?: string;
+  }
 ): Promise<{ invitation: InvitationData; user: AdminUserData }> {
   const invitation = await getInvitationByToken(token);
   if (!invitation) {
@@ -1115,11 +1097,24 @@ export async function acceptInvitation(
     throw new Error('This invitation has expired. Please ask an administrator to resend it.');
   }
 
+  // If role is mosque, handle mosque creation
+  let mosqueId: string | null = null;
+  if (invitation.role === 'mosque') {
+    if (!data.mosqueName || !data.mosqueLocation) {
+      throw new Error('Mosque name and location are required for Mosque Representatives');
+    }
+    mosqueId = `mosque-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    await db.insert(schema.mosque).values({
+      id: mosqueId,
+      name: data.mosqueName.trim(),
+      location: data.mosqueLocation.trim(),
+    });
+  }
+
   // Check if user exists
   let targetUser = await getUserByEmail(invitation.email);
 
   if (!targetUser) {
-    // Create the user
     targetUser = await createUser({
       name: data.name,
       email: invitation.email,
@@ -1127,17 +1122,20 @@ export async function acceptInvitation(
       status: 'active',
       permissions: invitation.permissions,
       grantedBy: invitation.invitedBy,
+      mosqueId,
     });
   } else {
-    // Update user status to active and assign role/permissions
     await updateUser(targetUser.id, {
       name: data.name || targetUser.name,
       role: invitation.role,
       status: 'active',
+      mosqueId: mosqueId || targetUser.mosqueId,
     });
 
     if (invitation.role === 'admin' && invitation.permissions.length > 0) {
       await setUserPermissions(targetUser.id, invitation.permissions);
+    } else if (invitation.role === 'mosque') {
+      await setUserPermissions(targetUser.id, ['media.view', 'media.create', 'media.update']);
     }
 
     targetUser = (await getUserById(targetUser.id))!;
@@ -1157,7 +1155,7 @@ export async function acceptInvitation(
   const acceptedInvitation: InvitationData = {
     id: updatedInv.id,
     email: updatedInv.email,
-    role: updatedInv.role as 'admin' | 'listener',
+    role: updatedInv.role as 'admin' | 'listener' | 'mosque',
     permissions: (updatedInv.permissions as PermissionId[]) || [],
     invitedBy: updatedInv.invitedBy,
     token: updatedInv.token,
@@ -1183,11 +1181,8 @@ export async function listAuditLogs(params?: {
   const limit = params?.limit || 50;
   const offset = params?.offset || 0;
 
-  const [countRes] = await db
-    .select({ count: count() })
-    .from(schema.auditLog);
-
-  const total = Number(countRes?.count || 0);
+  const [countResult] = await db.select({ count: count() }).from(schema.auditLog);
+  const total = Number(countResult?.count || 0);
 
   const rows = await db
     .select()
@@ -1214,9 +1209,20 @@ export async function listAuditLogs(params?: {
   return { logs, total };
 }
 
-export async function createAuditLog(
-  entry: Omit<AuditLogData, 'id' | 'createdAt'>
-): Promise<AuditLogData> {
+export const createAuditLog = recordAuditLog;
+
+export async function recordAuditLog(data: {
+  actorId: string;
+  actorEmail: string;
+  actorName: string;
+  action: string;
+  targetType: 'user' | 'admin' | 'media' | 'invitation';
+  targetId: string;
+  targetSummary: string;
+  details?: Record<string, unknown>;
+  ipAddress?: string | null;
+  status?: 'success' | 'failure';
+}): Promise<AuditLogData> {
   const id = `audit-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
   const now = new Date();
 
@@ -1224,16 +1230,16 @@ export async function createAuditLog(
     .insert(schema.auditLog)
     .values({
       id,
-      actorId: entry.actorId,
-      actorEmail: entry.actorEmail,
-      actorName: entry.actorName,
-      action: entry.action,
-      targetType: entry.targetType,
-      targetId: entry.targetId,
-      targetSummary: entry.targetSummary,
-      details: entry.details,
-      ipAddress: entry.ipAddress || null,
-      status: entry.status || 'success',
+      actorId: data.actorId,
+      actorEmail: data.actorEmail,
+      actorName: data.actorName,
+      action: data.action,
+      targetType: data.targetType,
+      targetId: data.targetId,
+      targetSummary: data.targetSummary,
+      details: data.details || {},
+      ipAddress: data.ipAddress || null,
+      status: data.status || 'success',
       createdAt: now,
     })
     .returning();
@@ -1269,6 +1275,7 @@ export async function getDashboardStats(): Promise<{
   totalUsers: number;
   totalAdmins: number;
   totalListeners: number;
+  totalMosques: number;
   totalPublishedMedia: number;
   totalArchivedMedia: number;
   totalDraftMedia: number;
@@ -1277,6 +1284,7 @@ export async function getDashboardStats(): Promise<{
     [usersCount],
     [adminsCount],
     [listenersCount],
+    [mosquesCount],
     [publishedMediaCount],
     [archivedMediaCount],
     [draftMediaCount],
@@ -1284,6 +1292,7 @@ export async function getDashboardStats(): Promise<{
     db.select({ count: count() }).from(schema.user),
     db.select({ count: count() }).from(schema.user).where(eq(schema.user.role, 'admin')),
     db.select({ count: count() }).from(schema.user).where(eq(schema.user.role, 'listener')),
+    db.select({ count: count() }).from(schema.user).where(eq(schema.user.role, 'mosque')),
     db.select({ count: count() }).from(schema.media).where(eq(schema.media.status, 'published')),
     db.select({ count: count() }).from(schema.media).where(eq(schema.media.status, 'archived')),
     db.select({ count: count() }).from(schema.media).where(eq(schema.media.status, 'draft')),
@@ -1293,6 +1302,7 @@ export async function getDashboardStats(): Promise<{
     totalUsers: Number(usersCount?.count || 0),
     totalAdmins: Number(adminsCount?.count || 0),
     totalListeners: Number(listenersCount?.count || 0),
+    totalMosques: Number(mosquesCount?.count || 0),
     totalPublishedMedia: Number(publishedMediaCount?.count || 0),
     totalArchivedMedia: Number(archivedMediaCount?.count || 0),
     totalDraftMedia: Number(draftMediaCount?.count || 0),

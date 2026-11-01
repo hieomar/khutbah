@@ -13,6 +13,8 @@ import {
   AlertCircle,
   Loader2,
   Sparkles,
+  Building2,
+  MapPin,
 } from 'lucide-react';
 import Logo from '../../../components/Logo';
 import {
@@ -33,6 +35,8 @@ export default function AcceptInviteClient() {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [mosqueName, setMosqueName] = useState('');
+  const [mosqueLocation, setMosqueLocation] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [successResult, setSuccessResult] = useState<{
@@ -83,11 +87,24 @@ export default function AcceptInviteClient() {
       return;
     }
 
+    if (details?.role === 'mosque') {
+      if (!mosqueName.trim()) {
+        setFormError('Please enter the name of your mosque');
+        return;
+      }
+      if (!mosqueLocation.trim()) {
+        setFormError('Please enter the location of your mosque');
+        return;
+      }
+    }
+
     setSubmitting(true);
     const res = await acceptInvitationAction({
       token,
       name,
       password,
+      mosqueName: details?.role === 'mosque' ? mosqueName : undefined,
+      mosqueLocation: details?.role === 'mosque' ? mosqueLocation : undefined,
     });
     setSubmitting(false);
 
@@ -147,7 +164,9 @@ export default function AcceptInviteClient() {
           </h2>
           <p className="text-xs text-secondary leading-relaxed">
             Welcome to Khutbah Malawi. Your account has been activated with{' '}
-            <strong className="text-[#171717] uppercase tracking-wider">{successResult.role}</strong>{' '}
+            <strong className="text-[#171717] uppercase tracking-wider">
+              {successResult.role === 'mosque' ? 'Mosque Representative' : successResult.role}
+            </strong>{' '}
             privileges.
           </p>
         </div>
@@ -178,7 +197,9 @@ export default function AcceptInviteClient() {
         </h1>
         <p className="text-xs text-secondary">
           {details?.inviterName} has invited you to collaborate as{' '}
-          <strong className="text-[#171717] capitalize">{details?.role}</strong>.
+          <strong className="text-[#171717] capitalize">
+            {details?.role === 'mosque' ? 'Mosque Representative' : details?.role}
+          </strong>.
         </p>
       </div>
 
@@ -204,6 +225,15 @@ export default function AcceptInviteClient() {
               </span>
             ))}
           </div>
+        </div>
+      )}
+
+      {details?.role === 'mosque' && (
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-emerald-700 shrink-0" />
+          <span>
+            You are setting up as a Mosque Representative. You will be able to upload and manage media for your mosque.
+          </span>
         </div>
       )}
 
@@ -246,6 +276,44 @@ export default function AcceptInviteClient() {
             />
           </div>
         </div>
+
+        {details?.role === 'mosque' && (
+          <>
+            <div>
+              <label className="block text-xs font-semibold text-[#171717] mb-1">
+                Mosque Name *
+              </label>
+              <div className="relative">
+                <Building2 className="w-4 h-4 text-secondary absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  required
+                  value={mosqueName}
+                  onChange={(e) => setMosqueName(e.target.value)}
+                  placeholder="e.g. Limbe Central Mosque"
+                  className="w-full bg-white text-xs px-3.5 pl-9 py-2.5 rounded-xl border border-black/10 focus:outline-none focus:border-[#171717]"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[#171717] mb-1">
+                Mosque Location *
+              </label>
+              <div className="relative">
+                <MapPin className="w-4 h-4 text-secondary absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  required
+                  value={mosqueLocation}
+                  onChange={(e) => setMosqueLocation(e.target.value)}
+                  placeholder="e.g. Churchill Road, Limbe, Blantyre"
+                  className="w-full bg-white text-xs px-3.5 pl-9 py-2.5 rounded-xl border border-black/10 focus:outline-none focus:border-[#171717]"
+                />
+              </div>
+            </div>
+          </>
+        )}
 
         <div>
           <label className="block text-xs font-semibold text-[#171717] mb-1">

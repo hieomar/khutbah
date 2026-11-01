@@ -12,7 +12,7 @@ function AdminLoginForm() {
   const searchParams = useSearchParams();
   const redirectTarget = searchParams.get('redirect') || '/admin';
 
-  const [email, setEmail] = useState('admin@khutbah.mw');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,10 +54,10 @@ function AdminLoginForm() {
           <Logo size="md" />
         </div>
         <h1 className="font-serif-heading text-3xl font-medium text-[#171717]">
-          Administrator Sign In
+          Management Portal Sign In
         </h1>
         <p className="text-xs text-secondary">
-          Enter your authorized administrative credentials to access the management portal.
+          Enter your authorized administrator or mosque representative credentials to access the management portal.
         </p>
       </div>
 
@@ -71,7 +71,7 @@ function AdminLoginForm() {
       <form onSubmit={handleLogin} className="space-y-4">
         <div>
           <label className="block text-xs font-semibold text-[#171717] mb-1">
-            Administrator Email
+            Account Email
           </label>
           <div className="relative">
             <Mail className="w-4 h-4 text-secondary absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -120,7 +120,7 @@ function AdminLoginForm() {
               <span>Authenticating...</span>
             </>
           ) : (
-            <span>Sign In to Admin Console</span>
+            <span>Sign In to Portal</span>
           )}
         </button>
       </form>
@@ -131,7 +131,7 @@ function AdminLoginForm() {
           Protected by Better Auth & Granular Role Authorization
         </p>
         <p className="text-[10px] text-secondary/70">
-          Listener accounts do not have access to administrative controls.
+          Listener accounts do not have access to management controls.
         </p>
       </div>
     </div>

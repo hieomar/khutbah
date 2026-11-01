@@ -9,14 +9,24 @@ import {
   Volume2,
   Video,
   AlertCircle,
+  Building2,
 } from 'lucide-react';
 import { createMediaAction } from '../../actions';
 import { CATEGORIES } from '../../../../data/contentData';
+import { AdminUserData } from '../../../../lib/db/store';
 
-export default function NewMediaClient() {
+interface NewMediaClientProps {
+  currentUser?: AdminUserData;
+}
+
+export default function NewMediaClient({ currentUser }: NewMediaClientProps) {
   const router = useRouter();
 
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+
+  const initialLocation = currentUser?.mosque?.name
+    ? `${currentUser.mosque.name}${currentUser.mosque.location ? `, ${currentUser.mosque.location}` : ''}`
+    : '';
 
   const [form, setForm] = useState({
     title: '',
@@ -32,7 +42,7 @@ export default function NewMediaClient() {
     fileSize: 1024 * 1024 * 15, // 15 MB
     mimeType: 'audio/mpeg',
     thumbnailName: '',
-    location: '',
+    location: initialLocation,
     district: 'Blantyre',
     language: 'Chichewa / English',
     tags: 'Malawi, Khutbah, Jumu’ah',
@@ -136,7 +146,9 @@ export default function NewMediaClient() {
           Upload New Islamic Media
         </h2>
         <p className="text-xs text-secondary">
-          Publish audio sermons, Friday khutbahs, or video lectures to the platform archive.
+          {currentUser?.role === 'mosque' && currentUser.mosque
+            ? `Publish audio sermons, Friday khutbahs, or video recordings for ${currentUser.mosque.name}.`
+            : 'Publish audio sermons, Friday khutbahs, or video lectures to the platform archive.'}
         </p>
       </div>
 
@@ -175,8 +187,8 @@ export default function NewMediaClient() {
                 <Volume2 className="w-5 h-5" />
               </div>
               <div>
-                <div className="font-semibold text-xs text-[#171717]">Audio Sermon / Recitation</div>
-                <div className="text-[10px] text-secondary">MP3, AAC, WAV up to 150MB</div>
+                <div className="font-semibold text-xs text-[#171717]">Audio Sermon / Khutbah</div>
+                <div className="text-[10px] text-secondary">MP3, M4A up to 100MB</div>
               </div>
             </button>
 
@@ -249,22 +261,22 @@ export default function NewMediaClient() {
                 <video
                   controls
                   src={localPreviewUrl}
-                  className="w-full aspect-video rounded-xl bg-black object-contain max-h-72"
+                  className="w-full max-h-60 rounded-xl bg-black"
                 />
               )}
             </div>
           )}
 
-          {/* Upload Progress Bar */}
+          {/* Upload Progress Indicator */}
           {uploadProgress !== null && (
             <div className="space-y-1">
-              <div className="flex justify-between text-xs text-secondary">
-                <span>Uploading to Object Storage...</span>
+              <div className="flex justify-between text-[11px] text-secondary font-mono">
+                <span>Direct Storage Transfer</span>
                 <span>{uploadProgress}%</span>
               </div>
-              <div className="w-full h-2 bg-black/5 rounded-full overflow-hidden">
+              <div className="w-full bg-black/5 h-2 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-accent-orange transition-all duration-300"
+                  className="bg-accent-orange h-full transition-all duration-300"
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
@@ -272,15 +284,15 @@ export default function NewMediaClient() {
           )}
         </div>
 
-        {/* Section 2: Metadata */}
+        {/* Section 2: Metadata Details */}
         <div className="p-6 rounded-2xl bg-white border border-black/8 shadow-2xs space-y-4">
           <h3 className="font-serif-heading text-xl font-medium text-[#171717]">
-            2. Recording Metadata
+            2. Sermon Metadata & Details
           </h3>
 
           <div>
             <label className="block text-xs font-semibold text-[#171717] mb-1">
-              Teaching Title *
+              Teaching / Khutbah Title *
             </label>
             <input
               type="text"
@@ -392,9 +404,17 @@ export default function NewMediaClient() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#171717] mb-1">
-                Mosque / Recording Hall *
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-[#171717]">
+                  Mosque / Recording Hall *
+                </label>
+                {currentUser?.role === 'mosque' && currentUser.mosque && (
+                  <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 font-medium">
+                    <Building2 className="w-3 h-3" />
+                    <span>Mosque registered</span>
+                  </span>
+                )}
+              </div>
               <input
                 type="text"
                 required
@@ -442,27 +462,27 @@ export default function NewMediaClient() {
                 type="checkbox"
                 checked={form.isFeatured}
                 onChange={(e) => setForm({ ...form, isFeatured: e.target.checked })}
-                className="rounded border-black/20"
+                className="w-4 h-4 rounded border-black/20 text-[#171717] focus:ring-0"
               />
-              <span>Feature on Public Homepage</span>
+              <span>Feature on Public Homepage Banner</span>
             </label>
           </div>
         </div>
 
-        {/* Submit Actions */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-black/8">
+        {/* Action Buttons */}
+        <div className="flex items-center justify-end gap-3 pt-2">
           <Link
             href="/admin/media"
-            className="px-4 py-2.5 rounded-xl text-xs font-medium text-secondary hover:bg-black/5"
+            className="px-5 py-2.5 rounded-xl border border-black/10 text-xs font-medium text-secondary hover:text-[#171717] hover:bg-black/5 transition-colors"
           >
             Cancel
           </Link>
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-2.5 rounded-xl bg-[#171717] text-white text-xs font-medium hover:bg-black disabled:opacity-50 cursor-pointer shadow-xs"
+            className="px-6 py-2.5 rounded-xl bg-[#171717] text-white text-xs font-medium hover:bg-black transition-all cursor-pointer shadow-xs disabled:opacity-50"
           >
-            {loading ? 'Publishing Recording...' : 'Publish Media to Archive'}
+            {loading ? 'Publishing Media...' : 'Publish Media to Archive'}
           </button>
         </div>
       </form>

@@ -1,10 +1,16 @@
 import React from 'react';
+import { redirect } from 'next/navigation';
 import { getDashboardStats, listAuditLogs } from '../../lib/db/store';
 import { requireAdmin } from '../../lib/auth/session';
 import AdminDashboardClient from './AdminDashboardClient';
 
 export default async function AdminDashboardPage() {
   const admin = await requireAdmin();
+
+  if (admin.role === 'mosque') {
+    redirect('/admin/media');
+  }
+
   const stats = await getDashboardStats();
   const { logs } = await listAuditLogs({ limit: 15 });
 

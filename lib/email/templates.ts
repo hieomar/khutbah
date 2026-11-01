@@ -6,7 +6,7 @@
 export interface InvitationEmailProps {
   recipientEmail: string;
   inviterName: string;
-  role: 'admin' | 'listener';
+  role: 'admin' | 'listener' | 'mosque';
   permissions?: string[];
   inviteUrl: string;
   message?: string | null;
@@ -55,7 +55,7 @@ function emailLayout(content: string, previewText: string): string {
       <td align="center">
         <!-- Container Card -->
         <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; background-color: #F8F8F5; border-radius: 20px; border: 1px solid rgba(23, 23, 23, 0.08); box-shadow: 0 4px 20px rgba(0,0,0,0.04); overflow: hidden;">
-          
+
           <!-- Header -->
           <tr>
             <td style="padding: 36px 40px 24px 40px; border-bottom: 1px solid rgba(23, 23, 23, 0.06); text-align: center;">
@@ -139,7 +139,7 @@ export function renderInvitationEmail(props: InvitationEmailProps): { html: stri
     <h1 style="margin: 0 0 16px 0; color: #171717; font-size: 24px; font-weight: 600; line-height: 30px;">
       You're invited to join Khutbah
     </h1>
-    
+
     <p style="margin: 0 0 16px 0; color: #40403C; font-size: 14px; line-height: 22px;">
       Hello,
     </p>
@@ -216,7 +216,7 @@ export function renderPasswordResetEmail(props: PasswordResetEmailProps): { html
     <h1 style="margin: 0 0 16px 0; color: #171717; font-size: 24px; font-weight: 600; line-height: 30px;">
       Reset your password
     </h1>
-    
+
     <p style="margin: 0 0 16px 0; color: #40403C; font-size: 14px; line-height: 22px;">
       ${props.userName ? `Hello <strong>${props.userName}</strong>,` : 'Hello,'}
     </p>
@@ -290,7 +290,7 @@ export function renderWelcomeEmail(props: WelcomeEmailProps): { html: string; te
     <h1 style="margin: 0 0 16px 0; color: #171717; font-size: 24px; font-weight: 600; line-height: 30px;">
       Welcome to Khutbah Malawi!
     </h1>
-    
+
     <p style="margin: 0 0 16px 0; color: #40403C; font-size: 14px; line-height: 22px;">
       Assalamu alaikum <strong>${props.userName}</strong>,
     </p>

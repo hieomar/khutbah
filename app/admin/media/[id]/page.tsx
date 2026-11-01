@@ -9,11 +9,15 @@ export default async function AdminEditMediaPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requirePermission('media.update');
+  const admin = await requirePermission('media.update');
   const { id } = await params;
   const media = await getMediaById(id);
 
   if (!media) {
+    notFound();
+  }
+
+  if (admin.role === 'mosque' && media.mosqueId && media.mosqueId !== admin.mosqueId) {
     notFound();
   }
 
