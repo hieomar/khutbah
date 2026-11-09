@@ -14,7 +14,7 @@ import { recordAuditEvent } from '../../lib/audit';
 import { sendWelcomeEmail } from '../../lib/email';
 import { db } from '../../lib/db';
 import * as schema from '../../lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 const RequestResetSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -131,7 +131,28 @@ export async function acceptInvitationAction(formData: unknown) {
     const existingUser = await getUserByEmail(inv.email);
     let userId = existingUser?.id;
 
-    if (!existingUser) {
+    if (existingUser) {
+      // Check if they already have an email/password account
+      const [emailAccount] = await db
+        .select()
+        .from(schema.account)
+        .where(
+          and(
+            eq(schema.account.userId, existingUser.id),
+            eq(schema.account.providerId, 'email')
+          )
+        )
+        .limit(1);
+
+      if (!emailAccount) {
+        // User exists but has no password account (likely created by admin via createUserAction)
+        // We delete the placeholder user so signUpEmail can create a full account with password
+        await db.delete(schema.user).where(eq(schema.user.id, existingUser.id));
+        userId = undefined;
+      }
+    }
+
+    if (!userId) {
       // Create user via Better Auth
       const signupRes = await auth.api.signUpEmail({
         body: {

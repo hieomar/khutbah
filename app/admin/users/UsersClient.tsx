@@ -48,7 +48,7 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
     name: '',
     email: '',
     role: 'listener',
-    status: 'active',
+    status: 'pending',
     permissions: ['users.view', 'media.view'],
   });
 
@@ -428,6 +428,9 @@ export default function UsersClient({ initialUsers, currentUser }: UsersClientPr
               <h3 className="font-serif-heading text-2xl font-medium text-[#171717]">
                 Create User Account
               </h3>
+              <p className="text-[11px] text-secondary mt-1">
+                A verification email will be sent to the user to set up their password and activate their account.
+              </p>
               <button
                 onClick={() => setIsCreateOpen(false)}
                 className="p-1.5 rounded-full hover:bg-black/5"

@@ -108,9 +108,35 @@ export async function createUserAction(formData: unknown) {
       name: parsed.name,
       email: parsed.email,
       role: parsed.role,
-      status: parsed.status,
+      status: 'pending', // Verification required
       permissions: parsed.role === 'admin' ? (parsed.permissions as PermissionId[]) : [],
       grantedBy: admin.id,
+    });
+
+    // Automatically trigger invitation/verification email
+    const newInv = await createInvitation({
+      email: parsed.email,
+      role: parsed.role,
+      permissions: (parsed.role === 'admin' ? parsed.permissions : []) as PermissionId[],
+      invitedBy: admin.id,
+      message: `Welcome to Khutbah Malawi! Your account has been created by an administrator. Please set up your password to activate your account and gain access to the platform.`,
+    });
+
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.BETTER_AUTH_URL ||
+      'http://localhost:3000';
+    const inviteUrl = `${appUrl}/auth/accept-invite?token=${newInv.token}`;
+
+    // Send invitation email via Resend
+    await sendInvitationEmail({
+      recipientEmail: newInv.email,
+      inviterName: admin.name,
+      role: newInv.role,
+      permissions: newInv.permissions,
+      inviteUrl,
+      message: newInv.message,
+      expiresAt: newInv.expiresAt,
     });
 
     await recordAuditEvent({
@@ -118,8 +144,13 @@ export async function createUserAction(formData: unknown) {
       action: parsed.role === 'admin' ? 'admin.created' : 'user.created',
       targetType: parsed.role === 'admin' ? 'admin' : 'user',
       targetId: newUser.id,
-      targetSummary: `Created ${parsed.role} account for ${parsed.name} (${parsed.email})`,
-      details: { role: parsed.role, status: parsed.status, permissionsCount: parsed.permissions.length },
+      targetSummary: `Created ${parsed.role} account for ${parsed.name} (${parsed.email}) and dispatched verification invite`,
+      details: {
+        role: parsed.role,
+        status: 'pending',
+        permissionsCount: parsed.permissions.length,
+        invitationId: newInv.id,
+      },
     });
 
     return { success: true, user: newUser };
